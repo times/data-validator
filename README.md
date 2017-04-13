@@ -2,6 +2,8 @@
 
 > Basic schema validator for JS objects and arrays
 
+[![Build Status](https://travis-ci.org/times/schema-validator.svg?branch=master)](https://travis-ci.org/times/schema-validator)
+
 ## Use
 
 Objects:
