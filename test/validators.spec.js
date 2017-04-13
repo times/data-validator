@@ -2,7 +2,44 @@ const { expect } = require('chai');
 const {
   objectValidator,
   arrayValidator,
+  compose,
 } = require('../lib/validators');
+
+describe('#compose()', () => {
+  const testSchema = {
+    anArray: {
+      type: 'array',
+      required: false,
+    },
+  };
+
+  const testCheck = (schema, data) =>
+    Array.isArray(data) ? [] : [`Data was not an array`];
+
+  const testData = {
+    anArray: [1, 2, 3],
+  };
+
+  it('should return a function', () => {
+    expect(compose()).to.be.a('function');
+  });
+
+  it('should return a function which returns a function when given a schema', () => {
+    const composedValidators = compose([testCheck]);
+
+    expect(composedValidators()).to.be.a('function');
+  });
+
+  it('should return the original validators', () => {
+    const composedValidators = compose([testCheck]);
+    const composedValidatorsWithSchema = composedValidators(testSchema);
+    const result = composedValidatorsWithSchema(testData);
+
+    expect(result).to.be.an('object');
+    expect(result).to.have.property('valid');
+    expect(result).to.have.property('errors');
+  });
+});
 
 describe('#objectValidator()', () => {
   const testSchema = {
