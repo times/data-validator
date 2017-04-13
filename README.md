@@ -90,6 +90,15 @@ For example:
     }
 
 
+## Contributing
+
+Pull requests are very welcome. Please include a clear description of any changes, and full test coverage.
+
+During development you can run tests with
+
+    npm test
+
+
 ## Contact
 
 Elliot Davies (elliot.davies@the-times.co.uk)
