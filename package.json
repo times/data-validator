@@ -1,5 +1,5 @@
 {
-  "name": "schema-validator",
+  "name": "@times/schema-validator",
   "version": "0.2.0",
   "description": "Basic schema validator for JS objects and arrays",
   "main": "index.js",
@@ -18,5 +18,16 @@
     "validation"
   ],
   "author": "Elliot Davies <elliot.davies@the-times.co.uk>",
-  "license": "ISC"
+  "license": "ISC",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/times/schema-validator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/times/schema-validator/issues"
+  },
+  "homepage": "https://github.com/times/schema-validator#readme"
 }
