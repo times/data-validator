@@ -14,7 +14,7 @@ describe('#compose()', () => {
   };
 
   const testCheck = (schema, data) =>
-    Array.isArray(data) ? [] : [`Data was not an array`];
+    (Array.isArray(data) ? [] : [`Data was not an array`]);
 
   const testData = {
     anArray: [1, 2, 3],
@@ -46,6 +46,18 @@ describe('#objectValidator()', () => {
     category: {
       type: 'string',
       required: true,
+      predicates: [
+        {
+          test: c => c.includes('abc'),
+          onError: c =>
+            `Field "category" with value "${c}" did not include "abc"`,
+        },
+        {
+          test: c => c.length < 10,
+          onError: c =>
+            `Field "category" with value "${c}" was longer than 10 characters`,
+        },
+      ],
     },
     children: {
       type: 'array',
@@ -94,7 +106,7 @@ describe('#objectValidator()', () => {
     });
 
     const data2 = {
-      category: 'edition',
+      category: 'abcabc',
     };
 
     expect(isValid(data2)).to.deep.equal({
@@ -105,7 +117,7 @@ describe('#objectValidator()', () => {
 
   it('should return errors if extra fields are present', () => {
     const data1 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
       extraField: '',
     };
@@ -116,7 +128,7 @@ describe('#objectValidator()', () => {
     });
 
     const data2 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
       children: [],
       anotherField: '',
@@ -128,7 +140,7 @@ describe('#objectValidator()', () => {
     });
 
     const data3 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
       children: [],
       extraField1: '',
@@ -153,7 +165,7 @@ describe('#objectValidator()', () => {
     });
 
     const data2 = {
-      category: 'edition',
+      category: 'abcabc',
       data: 'not an object',
     };
 
@@ -165,7 +177,7 @@ describe('#objectValidator()', () => {
 
   it('should return true regardless of whether optional fields are present', () => {
     const data1 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
     };
 
@@ -175,7 +187,7 @@ describe('#objectValidator()', () => {
     });
 
     const data2 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
       children: [],
     };
@@ -188,7 +200,7 @@ describe('#objectValidator()', () => {
 
   it('should return false when optional fields have the wrong types', () => {
     const data1 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
       children: {}, // Not an array
     };
@@ -199,7 +211,7 @@ describe('#objectValidator()', () => {
     });
 
     const data2 = {
-      category: 'edition',
+      category: 'abcabc',
       data: {},
       children: 456, // Not an array
     };
@@ -207,6 +219,53 @@ describe('#objectValidator()', () => {
     expect(isValid(data2)).to.deep.equal({
       valid: false,
       errors: ['Field "children" failed to typecheck (expected array)'],
+    });
+  });
+
+  it('should return errors if any item fails any of the given predicates', () => {
+    const data1 = {
+      data: {},
+      category: 'xyzxyz',
+    };
+
+    expect(isValid(data1)).to.deep.equal({
+      valid: false,
+      errors: ['Field "category" with value "xyzxyz" did not include "abc"'],
+    });
+
+    const data2 = {
+      data: {},
+      category: 'I contain "abc" but am too long',
+    };
+
+    expect(isValid(data2)).to.deep.equal({
+      valid: false,
+      errors: [
+        'Field "category" with value "I contain "abc" but am too long" was longer than 10 characters',
+      ],
+    });
+
+    const data3 = {
+      data: {},
+      category: 'Too long and xyzxyz',
+    };
+
+    expect(isValid(data3)).to.deep.equal({
+      valid: false,
+      errors: [
+        'Field "category" with value "Too long and xyzxyz" did not include "abc"',
+        'Field "category" with value "Too long and xyzxyz" was longer than 10 characters',
+      ],
+    });
+
+    const data4 = {
+      data: {},
+      category: 'Has abc',
+    };
+
+    expect(isValid(data4)).to.deep.equal({
+      valid: true,
+      errors: [],
     });
   });
 });
