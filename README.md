@@ -2,13 +2,13 @@
 
 > Basic schema validator for JS objects and arrays
 
-[![Build Status](https://travis-ci.org/times/schema-validator.svg?branch=master)](https://travis-ci.org/times/schema-validator)
+[![Build Status](https://travis-ci.org/times/schema-validator.svg?branch=master)](https://travis-ci.org/times/schema-validator) [![Code coverage](https://codecov.io/gh/times/schema-validator/branch/master/graph/badge.svg)](https://codecov.io/gh/times/schema-validator) [![npm version](https://badge.fury.io/js/%40times%2Fschema-validator.svg)](https://badge.fury.io/js/%40times%2Fschema-validator)
 
 ## Use
 
 Objects:
 
-    const { objectValidator } = require('schema-validator');
+    const { objectValidator } = require('@times/schema-validator');
 
     const objectSchema = {
       name: {
@@ -44,7 +44,7 @@ Objects:
 Arrays:
 
 
-    const { arrayValidator } = require('schema-validator');
+    const { arrayValidator } = require('@times/schema-validator');
 
     const arraySchema = {
       type: 'number',
