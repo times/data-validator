@@ -13,7 +13,13 @@ Objects:
     const objectSchema = {
       name: {
         type: 'string',
-        required: true
+        required: true,
+        predicates: [
+          {
+            test: s => s.length <= 20,
+            onError: s => `${s} was longer than 20`
+          }
+        ]
       },
       age: {
         type: 'number',
@@ -67,6 +73,7 @@ An object schema consists of field names that map to sets of properties. Each se
 
 - `type` (required): the type of the field. Can be string, number, date, array, object
 - `required` (optional): whether the field is required. Can be true or false, or omitted
+- `predicates` (optional): an array of predicates that should be applied to the contents of the field
 - `schemaValidator` (optional): if the field is an array or object, you can provide a validator that should be applied to the contents of the field
 
 An array schema can have the following properties:
