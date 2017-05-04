@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { OK, Err } = require('../lib/result');
+const { isOK, isErr } = require('../lib/result');
 const {
   validateIsObject,
   validateIsArray,
@@ -19,20 +19,20 @@ describe('validators', () => {
 
     it('should return an Err when the given data is not an object', () => {
       const res = validate('string');
-      expect(res).to.be.instanceof(Err);
+      expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal([`Data was not an object`]);
 
-      expect(validate(1)).to.be.instanceof(Err);
-      expect(validate([])).to.be.instanceof(Err);
-      expect(validate(new Date())).to.be.instanceof(Err);
+      expect(isErr(validate(1))).to.be.true;
+      expect(isErr(validate([]))).to.be.true;
+      expect(isErr(validate(new Date()))).to.be.true;
     });
 
     it('should return an OK when the given data is an object', () => {
       const res = validate({});
-      expect(res).to.be.instanceof(OK);
+      expect(isOK(res)).to.be.true;
       expect(res.errors).to.deep.equal([]);
 
-      expect(validate({ a: 1, b: 2 })).to.be.instanceof(OK);
+      expect(isOK(validate({ a: 1, b: 2 }))).to.be.true;
     });
   });
 
@@ -41,20 +41,20 @@ describe('validators', () => {
 
     it('should return an Err when the given data is not an array', () => {
       const res = validate('string');
-      expect(res).to.be.instanceof(Err);
+      expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal([`Data was not an array`]);
 
-      expect(validate(1)).to.be.instanceof(Err);
-      expect(validate({})).to.be.instanceof(Err);
-      expect(validate(new Date())).to.be.instanceof(Err);
+      expect(isErr(validate(1))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate(new Date()))).to.be.true;
     });
 
     it('should return an OK when the given data is an array', () => {
       const res = validate([]);
-      expect(res).to.be.instanceof(OK);
+      expect(isOK(res)).to.be.true;
       expect(res.errors).to.deep.equal([]);
 
-      expect(validate([1, 2, 3])).to.be.instanceof(OK);
+      expect(isOK(validate([1, 2, 3]))).to.be.true;
     });
   });
 
@@ -74,7 +74,7 @@ describe('validators', () => {
       const res = validate({
         field2: 'present and correct',
       });
-      expect(res).to.be.instanceof(Err);
+      expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal([`Missing required field "field1"`]);
     });
 
@@ -82,14 +82,14 @@ describe('validators', () => {
       const res1 = validate({
         field1: 'here',
       });
-      expect(res1).to.be.instanceof(OK);
+      expect(isOK(res1)).to.be.true;
       expect(res1.errors).to.deep.equal([]);
 
       const res2 = validate({
         field1: 'here',
         field2: 'also here',
       });
-      expect(res2).to.be.instanceof(OK);
+      expect(isOK(res2)).to.be.true;
       expect(res2.errors).to.deep.equal([]);
     });
   });
@@ -111,7 +111,7 @@ describe('validators', () => {
         field1: 'present',
         field3: 'should not be here',
       });
-      expect(res1).to.be.instanceof(Err);
+      expect(isErr(res1)).to.be.true;
       expect(res1.errors).to.deep.equal([`Extra field "field3"`]);
 
       const res2 = validate({
@@ -119,7 +119,7 @@ describe('validators', () => {
         field2: 'also present',
         field3: 'should not be here',
       });
-      expect(res2).to.be.instanceof(Err);
+      expect(isErr(res2)).to.be.true;
       expect(res2.errors).to.deep.equal([`Extra field "field3"`]);
     });
 
@@ -127,14 +127,14 @@ describe('validators', () => {
       const res1 = validate({
         field1: 'here',
       });
-      expect(res1).to.be.instanceof(OK);
+      expect(isOK(res1)).to.be.true;
       expect(res1.errors).to.deep.equal([]);
 
       const res2 = validate({
         field1: 'here',
         field2: 'also here',
       });
-      expect(res2).to.be.instanceof(OK);
+      expect(isOK(res2)).to.be.true;
       expect(res2.errors).to.deep.equal([]);
     });
   });
@@ -155,7 +155,7 @@ describe('validators', () => {
       const res1 = validate({
         field1: 123,
       });
-      expect(res1).to.be.instanceof(Err);
+      expect(isErr(res1)).to.be.true;
       expect(res1.errors).to.deep.equal([
         `Field "field1" failed to typecheck (expected string)`,
       ]);
@@ -164,7 +164,7 @@ describe('validators', () => {
         field1: 'a string',
         field2: 'not a number',
       });
-      expect(res2).to.be.instanceof(Err);
+      expect(isErr(res2)).to.be.true;
       expect(res2.errors).to.deep.equal([
         `Field "field2" failed to typecheck (expected number)`,
       ]);
@@ -175,7 +175,7 @@ describe('validators', () => {
         field1: 'a string',
         field2: 12345,
       });
-      expect(res).to.be.instanceof(OK);
+      expect(isOK(res)).to.be.true;
       expect(res.errors).to.deep.equal([]);
     });
   });
@@ -189,13 +189,13 @@ describe('validators', () => {
 
     it('should return an Err when the given array has items that do not typecheck', () => {
       const res1 = validate([1, '2', '3']);
-      expect(res1).to.be.instanceof(Err);
+      expect(isErr(res1)).to.be.true;
       expect(res1.errors).to.deep.equal([
         `Item "1" failed to typecheck (expected string)`,
       ]);
 
       const res2 = validate(['1', true]);
-      expect(res2).to.be.instanceof(Err);
+      expect(isErr(res2)).to.be.true;
       expect(res2.errors).to.deep.equal([
         `Item "true" failed to typecheck (expected string)`,
       ]);
@@ -203,7 +203,7 @@ describe('validators', () => {
 
     it("should return an OK when the given array's items all typecheck", () => {
       const res = validate(['1', '2']);
-      expect(res).to.be.instanceof(OK);
+      expect(isOK(res)).to.be.true;
       expect(res.errors).to.deep.equal([]);
     });
   });
@@ -226,7 +226,7 @@ describe('validators', () => {
       const res = validate({
         field1: 11,
       });
-      expect(res).to.be.instanceof(Err);
+      expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal([`11 was >= 10`]);
     });
 
@@ -234,15 +234,29 @@ describe('validators', () => {
       const res1 = validate({
         field1: 9,
       });
-      expect(res1).to.be.instanceof(OK);
+      expect(isOK(res1)).to.be.true;
       expect(res1.errors).to.deep.equal([]);
 
       const res2 = validate({
         field1: 9,
         field2: 100,
       });
-      expect(res2).to.be.instanceof(OK);
+      expect(isOK(res2)).to.be.true;
       expect(res2.errors).to.deep.equal([]);
+    });
+
+    it('should return an OK when there are no predicates', () => {
+      const res = validateFieldPredicates({ field1: { predicates: [] } })({
+        field1: 'empty',
+      });
+      expect(isOK(res)).to.be.true;
+    });
+
+    it('should return an OK when there are no predicates #2', () => {
+      const res = validateFieldPredicates({ field1: {} })({
+        field1: 'empty',
+      });
+      expect(isOK(res)).to.be.true;
     });
   });
 
@@ -260,14 +274,24 @@ describe('validators', () => {
 
     it('should return an Err when the array has items that do not pass the predicates', () => {
       const res = validate(['abc', 'xyz']);
-      expect(res).to.be.instanceof(Err);
+      expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal([`xyz did not include abc`]);
     });
 
     it("should return an OK when the array item's all pass the predicates", () => {
       const res = validate(['abc1', 'abc2', '123abc']);
-      expect(res).to.be.instanceof(OK);
+      expect(isOK(res)).to.be.true;
       expect(res.errors).to.deep.equal([]);
+    });
+
+    it('should return an OK when there are no predicates', () => {
+      const res = validateArrayPredicates({ predicates: [] })([1, 2, 3]);
+      expect(isOK(res)).to.be.true;
+    });
+
+    it('should return an OK when there are no predicates #2', () => {
+      const res = validateArrayPredicates({})([1, 2, 3]);
+      expect(isOK(res)).to.be.true;
     });
   });
 
@@ -301,7 +325,7 @@ describe('validators', () => {
         const res1 = validate1({
           field1: {},
         });
-        expect(res1).to.be.instanceof(Err);
+        expect(isErr(res1)).to.be.true;
         expect(res1.errors).to.deep.equal([
           `At field "field1": Missing required field "field1a"`,
         ]);
@@ -311,7 +335,7 @@ describe('validators', () => {
             field1c: 'should not be here',
           },
         });
-        expect(res2).to.be.instanceof(Err);
+        expect(isErr(res2)).to.be.true;
         expect(res2.errors).to.deep.equal([
           `At field "field1": Extra field "field1c"`,
         ]);
@@ -323,7 +347,7 @@ describe('validators', () => {
             field1a: 'here',
           },
         });
-        expect(res1).to.be.instanceof(OK);
+        expect(isOK(res1)).to.be.true;
         expect(res1.errors).to.deep.equal([]);
 
         const res2 = validate1({
@@ -332,7 +356,7 @@ describe('validators', () => {
             field1b: 'also here',
           },
         });
-        expect(res2).to.be.instanceof(OK);
+        expect(isOK(res2)).to.be.true;
         expect(res2.errors).to.deep.equal([]);
 
         const res3 = validate2({
@@ -340,7 +364,7 @@ describe('validators', () => {
             field1a: 'here',
           },
         });
-        expect(res3).to.be.instanceof(OK);
+        expect(isOK(res3)).to.be.true;
         expect(res3.errors).to.deep.equal([]);
       });
     });
@@ -367,7 +391,7 @@ describe('validators', () => {
         const res = validate({
           arrayField: ['abc', 'xyz'],
         });
-        expect(res).to.be.instanceof(Err);
+        expect(isErr(res)).to.be.true;
         expect(res.errors).to.deep.equal([
           `At field "arrayField": xyz did not include abc`,
         ]);
@@ -377,7 +401,7 @@ describe('validators', () => {
         const res = validate({
           arrayField: ['abc1', 'abc2', '123abc'],
         });
-        expect(res).to.be.instanceof(OK);
+        expect(isOK(res)).to.be.true;
         expect(res.errors).to.deep.equal([]);
       });
     });
@@ -400,7 +424,7 @@ describe('validators', () => {
 
       it('should return an Err when a nested array schemaValidator does not pass', () => {
         const res = validate([[1, 20], [3, 40]]);
-        expect(res).to.be.instanceof(Err);
+        expect(isErr(res)).to.be.true;
         expect(res.errors).to.deep.equal([
           `At item 0: 1 was <= 10`,
           `At item 1: 3 was <= 10`,
@@ -409,8 +433,13 @@ describe('validators', () => {
 
       it('should return an OK when all nested array schema validators pass', () => {
         const res = validate([[11, 20], [30, 40]]);
-        expect(res).to.be.instanceof(OK);
+        expect(isOK(res)).to.be.true;
         expect(res.errors).to.deep.equal([]);
+      });
+
+      it('should return an OK when there are no nested schema validators', () => {
+        const res = validateArraySchemaValidator({})([]);
+        expect(isOK(res)).to.be.true;
       });
     });
 
@@ -429,7 +458,7 @@ describe('validators', () => {
 
       it('should return an Err when a nested object schemaValidator does not pass', () => {
         const res = validate([{ field1: 123 }, { field1: '123' }]);
-        expect(res).to.be.instanceof(Err);
+        expect(isErr(res)).to.be.true;
         expect(res.errors).to.deep.equal([
           `At item 1: Field "field1" failed to typecheck (expected number)`,
         ]);
@@ -437,7 +466,7 @@ describe('validators', () => {
 
       it('should return an OK when all nested object schema validators pass', () => {
         const res = validate([{ field1: 123 }, { field1: 456 }]);
-        expect(res).to.be.instanceof(OK);
+        expect(isOK(res)).to.be.true;
         expect(res.errors).to.deep.equal([]);
       });
     });
