@@ -1,1 +1,1 @@
-module.exports = require('./lib/validators');
+module.exports = require('./lib/compose');
