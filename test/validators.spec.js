@@ -1,594 +1,474 @@
 const { expect } = require('chai');
+const { isOK, isErr } = require('../lib/result');
 const {
-  objectValidator,
-  arrayValidator,
-  compose,
+  validateIsObject,
+  validateIsArray,
+  validateRequiredFields,
+  validateExtraFields,
+  validateFieldsTypecheck,
+  validateItemsTypecheck,
+  validateFieldPredicates,
+  validateArrayPredicates,
+  validateFieldSchemaValidators,
+  validateArraySchemaValidator,
 } = require('../lib/validators');
 
-describe('#compose()', () => {
-  const testSchema = {
-    anArray: {
-      type: 'array',
-      required: false,
-    },
-  };
+describe('validators', () => {
+  describe('#validateIsObject()', () => {
+    const validate = validateIsObject({});
 
-  const testCheck = (schema, data) =>
-    (Array.isArray(data) ? [] : [`Data was not an array`]);
+    it('should return an Err when the given data is not an object', () => {
+      const res = validate('string');
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([`Data was not an object`]);
 
-  const testData = {
-    anArray: [1, 2, 3],
-  };
-
-  it('should return a function', () => {
-    expect(compose()).to.be.a('function');
-  });
-
-  it('should return a function which returns a function when given a schema', () => {
-    const composedValidators = compose([testCheck]);
-
-    expect(composedValidators()).to.be.a('function');
-  });
-
-  it('should return the original validators', () => {
-    const composedValidators = compose([testCheck]);
-    const composedValidatorsWithSchema = composedValidators(testSchema);
-    const result = composedValidatorsWithSchema(testData);
-
-    expect(result).to.be.an('object');
-    expect(result).to.have.property('valid');
-    expect(result).to.have.property('errors');
-  });
-});
-
-describe('#objectValidator()', () => {
-  const testSchema = {
-    category: {
-      type: 'string',
-      required: true,
-      predicates: [
-        {
-          test: c => c.includes('abc'),
-          onError: c =>
-            `Field "category" with value "${c}" did not include "abc"`,
-        },
-        {
-          test: c => c.length < 10,
-          onError: c =>
-            `Field "category" with value "${c}" was longer than 10 characters`,
-        },
-      ],
-    },
-    children: {
-      type: 'array',
-      required: false,
-    },
-    data: {
-      type: 'object',
-      required: true,
-    },
-  };
-
-  const isValid = objectValidator(testSchema);
-
-  it('should return errors if the passed data is not an object', () => {
-    const data1 = 12345;
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Data was not an object'],
+      expect(isErr(validate(1))).to.be.true;
+      expect(isErr(validate([]))).to.be.true;
+      expect(isErr(validate(new Date()))).to.be.true;
     });
 
-    const data2 = 'not an object';
+    it('should return an OK when the given data is an object', () => {
+      const res = validate({});
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
 
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Data was not an object'],
-    });
-
-    const data3 = ['still not an object'];
-
-    expect(isValid(data3)).to.deep.equal({
-      valid: false,
-      errors: ['Data was not an object'],
+      expect(isOK(validate({ a: 1, b: 2 }))).to.be.true;
     });
   });
 
-  it('should return errors if not all required fields are present', () => {
-    const data1 = {};
+  describe('#validateIsArray()', () => {
+    const validate = validateIsArray({});
 
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: [
-        'Missing required field "category"',
-        'Missing required field "data"',
-      ],
+    it('should return an Err when the given data is not an array', () => {
+      const res = validate('string');
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([`Data was not an array`]);
+
+      expect(isErr(validate(1))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate(new Date()))).to.be.true;
     });
 
-    const data2 = {
-      category: 'abcabc',
-    };
+    it('should return an OK when the given data is an array', () => {
+      const res = validate([]);
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
 
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Missing required field "data"'],
-    });
-  });
-
-  it('should return errors if extra fields are present', () => {
-    const data1 = {
-      category: 'abcabc',
-      data: {},
-      extraField: '',
-    };
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Extra field "extraField"'],
-    });
-
-    const data2 = {
-      category: 'abcabc',
-      data: {},
-      children: [],
-      anotherField: '',
-    };
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Extra field "anotherField"'],
-    });
-
-    const data3 = {
-      category: 'abcabc',
-      data: {},
-      children: [],
-      extraField1: '',
-      extraField2: 1234,
-    };
-
-    expect(isValid(data3)).to.deep.equal({
-      valid: false,
-      errors: ['Extra field "extraField1"', 'Extra field "extraField2"'],
+      expect(isOK(validate([1, 2, 3]))).to.be.true;
     });
   });
 
-  it('should return false when required fields have the wrong types', () => {
-    const data1 = {
-      category: 1234, // Not a string
-      data: {},
-    };
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Field "category" failed to typecheck (expected string)'],
-    });
-
-    const data2 = {
-      category: 'abcabc',
-      data: 'not an object',
-    };
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Field "data" failed to typecheck (expected object)'],
-    });
-  });
-
-  it('should return true regardless of whether optional fields are present', () => {
-    const data1 = {
-      category: 'abcabc',
-      data: {},
-    };
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: true,
-      errors: [],
-    });
-
-    const data2 = {
-      category: 'abcabc',
-      data: {},
-      children: [],
-    };
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: true,
-      errors: [],
-    });
-  });
-
-  it('should return false when optional fields have the wrong types', () => {
-    const data1 = {
-      category: 'abcabc',
-      data: {},
-      children: {}, // Not an array
-    };
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Field "children" failed to typecheck (expected array)'],
-    });
-
-    const data2 = {
-      category: 'abcabc',
-      data: {},
-      children: 456, // Not an array
-    };
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Field "children" failed to typecheck (expected array)'],
-    });
-  });
-
-  it('should return errors if any item fails any of the given predicates', () => {
-    const data1 = {
-      data: {},
-      category: 'xyzxyz',
-    };
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Field "category" with value "xyzxyz" did not include "abc"'],
-    });
-
-    const data2 = {
-      data: {},
-      category: 'I contain "abc" but am too long',
-    };
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: [
-        'Field "category" with value "I contain "abc" but am too long" was longer than 10 characters',
-      ],
-    });
-
-    const data3 = {
-      data: {},
-      category: 'Too long and xyzxyz',
-    };
-
-    expect(isValid(data3)).to.deep.equal({
-      valid: false,
-      errors: [
-        'Field "category" with value "Too long and xyzxyz" did not include "abc"',
-        'Field "category" with value "Too long and xyzxyz" was longer than 10 characters',
-      ],
-    });
-
-    const data4 = {
-      data: {},
-      category: 'Has abc',
-    };
-
-    expect(isValid(data4)).to.deep.equal({
-      valid: true,
-      errors: [],
-    });
-  });
-});
-
-describe('#arrayValidator()', () => {
-  const testSchema = {
-    type: 'string',
-    predicates: [
-      {
-        test: s => s.length >= 10,
-        onError: s => `Item "${s}" was less than 10`,
-      },
-      {
-        test: s => !s.includes('xyz'),
-        onError: s => `Item "${s}" contained xyz`,
-      },
-    ],
-  };
-
-  const isValid = arrayValidator(testSchema);
-
-  it('should return errors if the passed data is not an array', () => {
-    const data1 = 12345;
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Data was not an array'],
-    });
-
-    const data2 = 'not an array';
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Data was not an array'],
-    });
-
-    const data3 = {
-      not: 'an array',
-    };
-
-    expect(isValid(data3)).to.deep.equal({
-      valid: false,
-      errors: ['Data was not an array'],
-    });
-  });
-
-  it('should return errors if the array items are not of the given type', () => {
-    const data1 = [12345];
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Item "12345" failed to typecheck (expected string)'],
-    });
-
-    const data2 = [['array'], ['of'], ['strings']];
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: [
-        'Item "array" failed to typecheck (expected string)',
-        'Item "of" failed to typecheck (expected string)',
-        'Item "strings" failed to typecheck (expected string)',
-      ],
-    });
-  });
-
-  it('should return errors if any array item fails any of the given predicates', () => {
-    const data1 = ['too small', 'long enough'];
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: false,
-      errors: ['Item "too small" was less than 10'],
-    });
-
-    const data2 = ['I contain xyz'];
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['Item "I contain xyz" contained xyz'],
-    });
-
-    const data3 = ['xyzxyz'];
-
-    expect(isValid(data3)).to.deep.equal({
-      valid: false,
-      errors: ['Item "xyzxyz" was less than 10', 'Item "xyzxyz" contained xyz'],
-    });
-  });
-});
-
-describe('nesting', () => {
-  it('should handle object validation inside arrays', () => {
-    const objectSchema = {
-      name: {
-        type: 'string',
+  describe('#validateRequiredFields()', () => {
+    const schema = {
+      field1: {
         required: true,
       },
-      age: {
-        type: 'number',
+      field2: {
         required: false,
       },
     };
 
-    const arraySchema = {
-      type: 'object',
-      schemaValidator: objectValidator(objectSchema),
-    };
+    const validate = validateRequiredFields(schema);
 
-    const isValid = arrayValidator(arraySchema);
-
-    const data1 = [
-      {
-        name: 'Elliot',
-      },
-      {
-        name: 'Tom',
-        age: 25,
-      },
-    ];
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: true,
-      errors: [],
+    it('should return an Err when the given data is missing required fields', () => {
+      const res = validate({
+        field2: 'present and correct',
+      });
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([`Missing required field "field1"`]);
     });
 
-    const data2 = [
-      {
-        age: 20,
-      },
-    ];
+    it('should return an OK when the given data has all the required fields', () => {
+      const res1 = validate({
+        field1: 'here',
+      });
+      expect(isOK(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([]);
 
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: ['At item 0: Missing required field "name"'],
+      const res2 = validate({
+        field1: 'here',
+        field2: 'also here',
+      });
+      expect(isOK(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([]);
     });
   });
 
-  it('should handle array validation inside objects', () => {
-    const arraySchema = {
-      type: 'string',
-      predicates: [
-        {
-          test: s => s.charAt(0) === 'B',
-          onError: s => `Item "${s}" didn't start with B`,
-        },
-      ],
-    };
-
-    const objectSchema = {
-      name: {
-        type: 'string',
+  describe('#validateExtraFields()', () => {
+    const schema = {
+      field1: {
         required: true,
       },
-      children: {
-        type: 'array',
+      field2: {
         required: false,
-        schemaValidator: arrayValidator(arraySchema),
       },
     };
 
-    const isValid = objectValidator(objectSchema);
+    const validate = validateExtraFields(schema);
 
-    const data1 = {
-      name: 'Bob',
-      children: ['Betty', 'Beatrice'],
-    };
+    it('should return an Err when the given data has extra fields', () => {
+      const res1 = validate({
+        field1: 'present',
+        field3: 'should not be here',
+      });
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([`Extra field "field3"`]);
 
-    expect(isValid(data1)).to.deep.equal({
-      valid: true,
-      errors: [],
+      const res2 = validate({
+        field1: 'present',
+        field2: 'also present',
+        field3: 'should not be here',
+      });
+      expect(isErr(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([`Extra field "field3"`]);
     });
 
-    const data2 = {
-      name: 'Mary',
-      children: ['Mark'],
-    };
+    it('should return an OK when the given data has no extra fields', () => {
+      const res1 = validate({
+        field1: 'here',
+      });
+      expect(isOK(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([]);
 
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: [`At field "children": Item "Mark" didn't start with B`],
+      const res2 = validate({
+        field1: 'here',
+        field2: 'also here',
+      });
+      expect(isOK(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([]);
     });
   });
 
-  it('should handle object validation inside objects', () => {
-    const childSchema = {
-      age: {
-        type: 'number',
-        required: true,
-      },
-    };
-
-    const parentSchema = {
-      name: {
+  describe('#validateFieldsTypecheck()', () => {
+    const schema = {
+      field1: {
         type: 'string',
-        required: true,
       },
-      child: {
-        type: 'object',
-        required: true,
-        schemaValidator: objectValidator(childSchema),
+      field2: {
+        type: 'number',
       },
     };
 
-    const isValid = objectValidator(parentSchema);
+    const validate = validateFieldsTypecheck(schema);
 
-    const data1 = {
-      name: 'Hugo',
-      child: {
-        age: 12,
-      },
-    };
+    it('should return an Err when the given data has fields that do not typecheck', () => {
+      const res1 = validate({
+        field1: 123,
+      });
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([
+        `Field "field1" failed to typecheck (expected string)`,
+      ]);
 
-    expect(isValid(data1)).to.deep.equal({
-      valid: true,
-      errors: [],
+      const res2 = validate({
+        field1: 'a string',
+        field2: 'not a number',
+      });
+      expect(isErr(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([
+        `Field "field2" failed to typecheck (expected number)`,
+      ]);
     });
 
-    const data2 = {
-      name: 'Hector',
-      child: {
-        age: 'not a number',
-      },
-    };
-
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: [
-        'At field "child": Field "age" failed to typecheck (expected number)',
-      ],
+    it("should return an OK when the given data's fields all typecheck", () => {
+      const res = validate({
+        field1: 'a string',
+        field2: 12345,
+      });
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
     });
   });
 
-  it('should handle array validation inside arrays', () => {
-    const childSchema = {
+  describe('#validateItemsTypecheck()', () => {
+    const schema = {
       type: 'string',
+    };
+
+    const validate = validateItemsTypecheck(schema);
+
+    it('should return an Err when the given array has items that do not typecheck', () => {
+      const res1 = validate([1, '2', '3']);
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([
+        `Item "1" failed to typecheck (expected string)`,
+      ]);
+
+      const res2 = validate(['1', true]);
+      expect(isErr(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([
+        `Item "true" failed to typecheck (expected string)`,
+      ]);
+    });
+
+    it("should return an OK when the given array's items all typecheck", () => {
+      const res = validate(['1', '2']);
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
+    });
+  });
+
+  describe('#validateFieldPredicates()', () => {
+    const schema = {
+      field1: {
+        predicates: [
+          {
+            test: x => x < 10,
+            onError: x => `${x} was >= 10`,
+          },
+        ],
+      },
+    };
+
+    const validate = validateFieldPredicates(schema);
+
+    it('should return an Err when the data object has fields that do not pass their predicates', () => {
+      const res = validate({
+        field1: 11,
+      });
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([`11 was >= 10`]);
+    });
+
+    it("should return an OK when the data object's fields all pass their predicates", () => {
+      const res1 = validate({
+        field1: 9,
+      });
+      expect(isOK(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([]);
+
+      const res2 = validate({
+        field1: 9,
+        field2: 100,
+      });
+      expect(isOK(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([]);
+    });
+
+    it('should return an OK when there are no predicates', () => {
+      const res = validateFieldPredicates({ field1: { predicates: [] } })({
+        field1: 'empty',
+      });
+      expect(isOK(res)).to.be.true;
+    });
+
+    it('should return an OK when there are no predicates #2', () => {
+      const res = validateFieldPredicates({ field1: {} })({
+        field1: 'empty',
+      });
+      expect(isOK(res)).to.be.true;
+    });
+  });
+
+  describe('#validateArrayPredicates()', () => {
+    const schema = {
       predicates: [
         {
-          test: x => x.length <= 10,
-          onError: x => `Item "${x}" was longer than 10 characters`,
+          test: s => s.includes('abc'),
+          onError: s => `${s} did not include abc`,
         },
       ],
     };
 
-    const parentSchema = {
-      type: 'array',
-      schemaValidator: arrayValidator(childSchema),
-    };
+    const validate = validateArrayPredicates(schema);
 
-    const isValid = arrayValidator(parentSchema);
-
-    const data1 = [['small', 'tiny'], ['petite']];
-
-    expect(isValid(data1)).to.deep.equal({
-      valid: true,
-      errors: [],
+    it('should return an Err when the array has items that do not pass the predicates', () => {
+      const res = validate(['abc', 'xyz']);
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([`xyz did not include abc`]);
     });
 
-    const data2 = [['much too lengthy'], ['so is this one']];
+    it("should return an OK when the array item's all pass the predicates", () => {
+      const res = validate(['abc1', 'abc2', '123abc']);
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
+    });
 
-    expect(isValid(data2)).to.deep.equal({
-      valid: false,
-      errors: [
-        'At item 0: Item "much too lengthy" was longer than 10 characters',
-        'At item 1: Item "so is this one" was longer than 10 characters',
-      ],
+    it('should return an OK when there are no predicates', () => {
+      const res = validateArrayPredicates({ predicates: [] })([1, 2, 3]);
+      expect(isOK(res)).to.be.true;
+    });
+
+    it('should return an OK when there are no predicates #2', () => {
+      const res = validateArrayPredicates({})([1, 2, 3]);
+      expect(isOK(res)).to.be.true;
     });
   });
-});
 
-describe('typechecking', () => {
-  const dateSchema = {
-    publishedDate: {
-      type: 'date',
-      required: true,
-    },
-  };
+  describe('#validateFieldSchemaValidators()', () => {
+    describe('objects inside objects', () => {
+      const nestedSchema = {
+        field1a: {
+          required: true,
+        },
+        field1b: {
+          required: false,
+        },
+      };
 
-  const isValid = objectValidator(dateSchema);
+      const schema1 = {
+        field1: {
+          schemaValidator: validateRequiredFields(nestedSchema),
+        },
+      };
 
-  it('should allow either Date objects or ISO strings to validate as dates', () => {
-    const data1 = {
-      publishedDate: new Date(),
-    };
+      const schema2 = {
+        field1: {
+          schemaValidator: validateExtraFields(nestedSchema),
+        },
+      };
 
-    const data2 = {
-      publishedDate: new Date().toJSON(),
-    };
+      const validate1 = validateFieldSchemaValidators(schema1);
+      const validate2 = validateFieldSchemaValidators(schema2);
 
-    const data3 = {
-      publishedDate: new Date().toISOString(),
-    };
+      it('should return an Err when a nested field schemaValidator does not pass', () => {
+        const res1 = validate1({
+          field1: {},
+        });
+        expect(isErr(res1)).to.be.true;
+        expect(res1.errors).to.deep.equal([
+          `At field "field1": Missing required field "field1a"`,
+        ]);
 
-    const data4 = {
-      publishedDate: '2017-04-06G17:16:20.762Z', // 'G' is invalid (should be 'T')
-    };
+        const res2 = validate2({
+          field1: {
+            field1c: 'should not be here',
+          },
+        });
+        expect(isErr(res2)).to.be.true;
+        expect(res2.errors).to.deep.equal([
+          `At field "field1": Extra field "field1c"`,
+        ]);
+      });
 
-    const data5 = {
-      publishedDate: 12345,
-    };
+      it('should return an OK when all nested field schemaValidators pass', () => {
+        const res1 = validate1({
+          field1: {
+            field1a: 'here',
+          },
+        });
+        expect(isOK(res1)).to.be.true;
+        expect(res1.errors).to.deep.equal([]);
 
-    expect(isValid(data1)).to.deep.equal({
-      valid: true,
-      errors: [],
+        const res2 = validate1({
+          field1: {
+            field1a: 'here',
+            field1b: 'also here',
+          },
+        });
+        expect(isOK(res2)).to.be.true;
+        expect(res2.errors).to.deep.equal([]);
+
+        const res3 = validate2({
+          field1: {
+            field1a: 'here',
+          },
+        });
+        expect(isOK(res3)).to.be.true;
+        expect(res3.errors).to.deep.equal([]);
+      });
     });
 
-    expect(isValid(data2)).to.deep.equal({
-      valid: true,
-      errors: [],
+    describe('arrays inside objects', () => {
+      const nestedSchema = {
+        predicates: [
+          {
+            test: s => s.includes('abc'),
+            onError: s => `${s} did not include abc`,
+          },
+        ],
+      };
+
+      const schema = {
+        arrayField: {
+          schemaValidator: validateArrayPredicates(nestedSchema),
+        },
+      };
+
+      const validate = validateFieldSchemaValidators(schema);
+
+      it('should return an Err when items in the nested array do not pass the schemaValidator', () => {
+        const res = validate({
+          arrayField: ['abc', 'xyz'],
+        });
+        expect(isErr(res)).to.be.true;
+        expect(res.errors).to.deep.equal([
+          `At field "arrayField": xyz did not include abc`,
+        ]);
+      });
+
+      it('should return an OK when all nested array schema validators pass', () => {
+        const res = validate({
+          arrayField: ['abc1', 'abc2', '123abc'],
+        });
+        expect(isOK(res)).to.be.true;
+        expect(res.errors).to.deep.equal([]);
+      });
     });
 
-    expect(isValid(data3)).to.deep.equal({
-      valid: true,
-      errors: [],
+    describe('arrays inside arrays', () => {
+      const nestedSchema = {
+        predicates: [
+          {
+            test: x => x > 10,
+            onError: x => `${x} was <= 10`,
+          },
+        ],
+      };
+
+      const schema = {
+        schemaValidator: validateArrayPredicates(nestedSchema),
+      };
+
+      const validate = validateArraySchemaValidator(schema);
+
+      it('should return an Err when a nested array schemaValidator does not pass', () => {
+        const res = validate([[1, 20], [3, 40]]);
+        expect(isErr(res)).to.be.true;
+        expect(res.errors).to.deep.equal([
+          `At item 0: 1 was <= 10`,
+          `At item 1: 3 was <= 10`,
+        ]);
+      });
+
+      it('should return an OK when all nested array schema validators pass', () => {
+        const res = validate([[11, 20], [30, 40]]);
+        expect(isOK(res)).to.be.true;
+        expect(res.errors).to.deep.equal([]);
+      });
+
+      it('should return an OK when there are no nested schema validators', () => {
+        const res = validateArraySchemaValidator({})([]);
+        expect(isOK(res)).to.be.true;
+      });
     });
 
-    expect(isValid(data4)).to.deep.equal({
-      valid: false,
-      errors: ['Field "publishedDate" failed to typecheck (expected date)'],
-    });
+    describe('objects inside arrays', () => {
+      const nestedSchema = {
+        field1: {
+          type: 'number',
+        },
+      };
 
-    expect(isValid(data5)).to.deep.equal({
-      valid: false,
-      errors: ['Field "publishedDate" failed to typecheck (expected date)'],
+      const schema = {
+        schemaValidator: validateFieldsTypecheck(nestedSchema),
+      };
+
+      const validate = validateArraySchemaValidator(schema);
+
+      it('should return an Err when a nested object schemaValidator does not pass', () => {
+        const res = validate([{ field1: 123 }, { field1: '123' }]);
+        expect(isErr(res)).to.be.true;
+        expect(res.errors).to.deep.equal([
+          `At item 1: Field "field1" failed to typecheck (expected number)`,
+        ]);
+      });
+
+      it('should return an OK when all nested object schema validators pass', () => {
+        const res = validate([{ field1: 123 }, { field1: 456 }]);
+        expect(isOK(res)).to.be.true;
+        expect(res.errors).to.deep.equal([]);
+      });
     });
   });
 });

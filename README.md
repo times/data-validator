@@ -97,6 +97,30 @@ For example:
     }
 
 
+## Compose
+
+Two validators, `objectValidator` and `arrayValidator`, are provided by default. If these are insufficient, however, you can build and compose your own validators.
+
+A validator is a function with the signature `schema -> data -> Result`, where a Result can be constructed using the provided `ok()` or `err()` functions. `err()` accepts an array of error messages.
+
+To chain multiple validators together you can use the `compose` function. For example:
+
+    const validatorOne = schema => data =>
+      data.hasOwnProperty('one') ? ok() : err([`No property "one"`]);
+    
+    const validatorTwo = ...
+
+    const composedValidator = compose(
+      validatorOne,
+      validatorTwo
+    );
+
+    const result = composedValidator(schema)(data);
+
+
+Composed validators are run in order until either one of them returns an error or they all succeed.
+
+
 ## Contributing
 
 Pull requests are very welcome. Please include a clear description of any changes, and full test coverage.
