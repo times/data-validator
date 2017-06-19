@@ -18,11 +18,13 @@ describe('helpers', () => {
 
     it('should fail for non-ISO strings', () => {
       expect(isISOString('boo')).to.be.false;
-      expect(isISOString('2017-05-03')).to.be.false;
+      expect(isISOString('2017-05XYZ-03')).to.be.false;
       expect(isISOString('16:12:18.554Z')).to.be.false;
     });
 
     it('should succeed for ISO strings', () => {
+      expect(isISOString('2017-05-03')).to.be.true;
+      expect(isISOString('2017-05-03T16:12:18.554+01:00')).to.be.true;
       expect(isISOString('2017-05-03T16:12:18.554Z')).to.be.true;
     });
   });
@@ -36,12 +38,13 @@ describe('helpers', () => {
     });
 
     it('should fail for non-ISO strings', () => {
-      expect(isDate('2017-05-03')).to.be.false;
+      expect(isDate('2017-05XYZ-03')).to.be.false;
       expect(isDate('16:12:18.554Z')).to.be.false;
     });
 
     it('should succeed for dates or ISO strings', () => {
       expect(isDate(new Date())).to.be.true;
+      expect(isDate('2017-05-03')).to.be.true;
       expect(isDate('2017-05-03T16:12:18.554Z')).to.be.true;
     });
   });
