@@ -25,9 +25,9 @@ const isObject: Validator = data =>
  *
  * compose :: ([val] -> Result) -> [val] -> val
  */
-const compose = (run: Runner) => (...validators: Array<Validator>) => (
-  data: Data
-): Result => run(...validators)(data);
+type Compose = Runner => (...vs: Array<Validator>) => (Data) => Result;
+const compose: Compose = run => (...validators) => data =>
+  run(...validators)(data);
 
 /**
  * Run a series of validators (left-to-right) such that all of the
@@ -35,7 +35,8 @@ const compose = (run: Runner) => (...validators: Array<Validator>) => (
  *
  * all :: [val] -> data -> Result
  */
-const all = (...validators: Array<Validator>) => (data: Data): Result =>
+type All = (...vs: Array<Validator>) => (Data) => Result;
+const all: All = (...validators) => data =>
   validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
 
 /**
@@ -44,7 +45,8 @@ const all = (...validators: Array<Validator>) => (data: Data): Result =>
  *
  * some :: [val] -> data -> Result
  */
-const some = (...validators: Array<Validator>) => (data: Data): Result =>
+type Some = (...vs: Array<Validator>) => (Data) => Result;
+const some: Some = (...validators) => data =>
   validators.reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
