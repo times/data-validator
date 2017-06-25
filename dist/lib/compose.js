@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.fromObjectSchema = exports.some = exports.all = undefined;
+exports.arrayValidator = exports.objectValidator = exports.fromArraySchema = exports.fromObjectSchema = exports.some = exports.all = undefined;
 
 var _result = require('./result');
 
@@ -45,7 +45,7 @@ var some = exports.some = function some(validators) {
 };
 
 /**
- * Convert a schema to an array of validators
+ * Convert an object schema to an array of validators
  */
 var fromObjectSchema = exports.fromObjectSchema = function fromObjectSchema() {
   var schema = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -66,44 +66,33 @@ var fromObjectSchema = exports.fromObjectSchema = function fromObjectSchema() {
   }, defaultVs);
 };
 
-// const {
-//   validateIsObject,
-//   validateIsArray,
-//   validateRequiredFields,
-//   validateExtraFields,
-//   // validateFieldPredicates,
-//   // validateArrayPredicates,
-//   validateFieldsTypecheck,
-//   validateItemsTypecheck,
-//   validateFieldSchemaValidators,
-//   validateArraySchemaValidator,
-// } = require('./validators');
+/**
+ * Convert an array schema to an array of validators
+ */
+var fromArraySchema = exports.fromArraySchema = function fromArraySchema() {
+  var schema = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-// /**
-//  * Precomposed validator for objects
-//  */
-// const objectValidator = allOf(
-//   validateIsObject,
-//   validateRequiredFields,
-//   validateExtraFields,
-//   validateFieldsTypecheck,
-//   // validateFieldPredicates,
-//   validateFieldSchemaValidators
-// );
+  var defaultVs = [_validators.validateIsArray];
 
-// /**
-//  * Precomposed validator for arrays
-//  */
-// const arrayValidator = allOf(
-//   validateIsArray,
-//   validateItemsTypecheck,
-//   // validateArrayPredicates,
-//   validateArraySchemaValidator
-// );
+  if (!(0, _helpers.isObject)(schema)) return defaultVs;
 
-// module.exports = {
-//   allOf,
-//   someOf,
-//   objectValidator,
-//   arrayValidator,
-// };
+  var extraVs = [];
+  if (schema.type) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateArrayItemsHaveType)(schema.type)]);
+  if (schema.validator) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateArrayItemsPass)(schema.validator)]);
+
+  return [].concat(defaultVs, _toConsumableArray(extraVs));
+};
+
+/**
+ * Precomposed helper for objects
+ */
+var objectValidator = exports.objectValidator = function objectValidator(schema) {
+  return all(fromObjectSchema(schema));
+};
+
+/**
+ * Precomposed helper for arrays
+ */
+var arrayValidator = exports.arrayValidator = function arrayValidator(schema) {
+  return all(fromArraySchema(schema));
+};

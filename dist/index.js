@@ -6,24 +6,84 @@ Object.defineProperty(exports, "__esModule", {
 
 var _compose = require('./lib/compose');
 
-Object.keys(_compose).forEach(function (key) {
-  if (key === "default" || key === "__esModule") return;
-  Object.defineProperty(exports, key, {
-    enumerable: true,
-    get: function get() {
-      return _compose[key];
-    }
-  });
+Object.defineProperty(exports, 'all', {
+  enumerable: true,
+  get: function get() {
+    return _compose.all;
+  }
+});
+Object.defineProperty(exports, 'some', {
+  enumerable: true,
+  get: function get() {
+    return _compose.some;
+  }
+});
+Object.defineProperty(exports, 'fromObjectSchema', {
+  enumerable: true,
+  get: function get() {
+    return _compose.fromObjectSchema;
+  }
+});
+Object.defineProperty(exports, 'fromArraySchema', {
+  enumerable: true,
+  get: function get() {
+    return _compose.fromArraySchema;
+  }
+});
+Object.defineProperty(exports, 'objectValidator', {
+  enumerable: true,
+  get: function get() {
+    return _compose.objectValidator;
+  }
+});
+Object.defineProperty(exports, 'arrayValidator', {
+  enumerable: true,
+  get: function get() {
+    return _compose.arrayValidator;
+  }
 });
 
 var _result = require('./lib/result');
 
-Object.keys(_result).forEach(function (key) {
-  if (key === "default" || key === "__esModule") return;
-  Object.defineProperty(exports, key, {
-    enumerable: true,
-    get: function get() {
-      return _result[key];
-    }
-  });
+Object.defineProperty(exports, 'ok', {
+  enumerable: true,
+  get: function get() {
+    return _result.ok;
+  }
+});
+Object.defineProperty(exports, 'err', {
+  enumerable: true,
+  get: function get() {
+    return _result.err;
+  }
+});
+Object.defineProperty(exports, 'isOK', {
+  enumerable: true,
+  get: function get() {
+    return _result.isOK;
+  }
+});
+Object.defineProperty(exports, 'isErr', {
+  enumerable: true,
+  get: function get() {
+    return _result.isErr;
+  }
+});
+Object.defineProperty(exports, 'toResult', {
+  enumerable: true,
+  get: function get() {
+    return _result.toResult;
+  }
+});
+Object.defineProperty(exports, 'mapErrors', {
+  enumerable: true,
+  get: function get() {
+    return _result.mapErrors;
+  }
+});
+Object.defineProperty(exports, 'flattenResults', {
+  enumerable: true,
+  get: function get() {
+    return _result.flattenResults;
+  }
 });

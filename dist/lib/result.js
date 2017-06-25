@@ -4,31 +4,51 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-// Constructors
-
-
-// Types
 var ok = exports.ok = function ok() {
   return { valid: true, errors: [] };
 };
 
-var err = exports.err = function err(errs) {
-  return {
-    valid: false,
-    errors: errs
-  };
+/**
+ * Constructors
+ */
+
+
+/**
+ * Types
+ */
+var err = exports.err = function err() {
+  var errs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+  return { valid: false, errors: errs };
 };
 
-// Helpers
+/**
+ * Helpers
+ */
 var isOK = exports.isOK = function isOK(r) {
-  return r.valid;
+  return r.valid === true;
 };
 
 var isErr = exports.isErr = function isErr(r) {
-  return !r.valid;
+  return r.valid === false;
 };
 
+// Convert a (possibly empty) array of errors into a Result
 var toResult = exports.toResult = function toResult(errs) {
   return errs.length === 0 ? ok() : err(errs);
+};
+
+// Apply a function to every error in a Result
+var mapErrors = exports.mapErrors = function mapErrors(f) {
+  return function (r) {
+    return toResult(r.errors.map(f));
+  };
+};
+
+// Flatten an array of Results into a single Result
+var flattenResults = exports.flattenResults = function flattenResults(results) {
+  return results.reduce(function (acc, r) {
+    return toResult([].concat(_toConsumableArray(acc.errors), _toConsumableArray(r.errors)));
+  }, ok());
 };

@@ -41,15 +41,17 @@ var isArray = exports.isArray = function isArray(arr) {
 /**
  * Does the given value match the given type?
  */
-var typechecks = exports.typechecks = function typechecks(val, type) {
-  switch (type) {
-    case 'array':
-      return isArray(val);
-    case 'date':
-      return isDate(val);
-    case 'object':
-      return isObject(val);
-    default:
-      return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === type;
-  }
+var isType = exports.isType = function isType(type) {
+  return function (val) {
+    switch (type) {
+      case 'array':
+        return isArray(val);
+      case 'date':
+        return isDate(val);
+      case 'object':
+        return isObject(val);
+      default:
+        return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === type;
+    }
+  };
 };
