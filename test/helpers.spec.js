@@ -4,7 +4,7 @@ import {
   isDate,
   isObject,
   isArray,
-  typechecks,
+  isType,
 } from '../src/lib/helpers';
 
 describe('helpers', () => {
@@ -82,29 +82,29 @@ describe('helpers', () => {
     });
   });
 
-  describe('#typechecks()', () => {
+  describe('#isType()', () => {
     it('should fail when the value is not of the given type', () => {
-      expect(typechecks(1, 'string')).to.be.false;
-      expect(typechecks([], 'object')).to.be.false;
-      expect(typechecks([], 'function')).to.be.false;
-      expect(typechecks({}, 'array')).to.be.false;
-      expect(typechecks('1', 'number')).to.be.false;
-      expect(typechecks(new Date(), 'object')).to.be.false;
-      expect(typechecks(new Date(), 'number')).to.be.false;
+      expect(isType('string')(1)).to.be.false;
+      expect(isType('object')([])).to.be.false;
+      expect(isType('function')([])).to.be.false;
+      expect(isType('array')({})).to.be.false;
+      expect(isType('number')('1')).to.be.false;
+      expect(isType('object')(new Date())).to.be.false;
+      expect(isType('number')(new Date())).to.be.false;
 
       const f = () => {};
-      expect(typechecks(f, 'object')).to.be.false;
+      expect(isType('object')(f)).to.be.false;
     });
 
     it('should succeed when the value is of the given type', () => {
-      expect(typechecks(1, 'number')).to.be.true;
-      expect(typechecks([], 'array')).to.be.true;
-      expect(typechecks({}, 'object')).to.be.true;
-      expect(typechecks('sss', 'string')).to.be.true;
-      expect(typechecks(new Date(), 'date')).to.be.true;
+      expect(isType('number')(1)).to.be.true;
+      expect(isType('array')([])).to.be.true;
+      expect(isType('object')({})).to.be.true;
+      expect(isType('string')('sss')).to.be.true;
+      expect(isType('date')(new Date())).to.be.true;
 
       const f = () => {};
-      expect(typechecks(f, 'function')).to.be.true;
+      expect(isType('function')(f)).to.be.true;
     });
   });
 });

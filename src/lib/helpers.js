@@ -34,8 +34,8 @@ export const isArray: IsArray = arr => Array.isArray(arr);
 /**
  * Does the given value match the given type?
  */
-type Typechecks = (any, string) => boolean;
-export const typechecks: Typechecks = (val, type) => {
+type Typechecks = string => (any) => boolean;
+export const isType: Typechecks = type => val => {
   switch (type) {
     case 'array':
       return isArray(val);

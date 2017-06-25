@@ -1,6 +1,6 @@
 // @flow
 
-import { isObject, isArray, typechecks } from './helpers';
+import { isObject, isArray, isType } from './helpers';
 
 import { ok, err, toResult, mapErrors, flattenResults } from './result';
 import type { Result, Errors } from './result';
@@ -32,7 +32,7 @@ export const validateObjHasKey: ValidateObjHasKey = key => obj =>
 type ValidateObjPropHasType = string => (string) => Validator;
 export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-  return typechecks(obj[key], type)
+  return isType(type)(obj[key])
     ? ok()
     : err([`Field "${key}" failed to typecheck (expected ${type})`]);
 };
@@ -60,7 +60,7 @@ type ValidateArrayItemsHaveType = string => Validator;
 export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
   toResult(
     arr
-      .filter(a => !typechecks(a, type))
+      .filter(a => !isType(type)(a))
       .map(a => `Item "${a}" failed to typecheck (expected ${type})`)
   );
 
