@@ -19,27 +19,29 @@ import type { Validator, Data } from './validators';
 /**
  * Types
  */
-type SchemaField = {
+type SchemaRules = {
   required?: boolean,
   type?: string,
   validator?: Validator,
 };
-type Schema = { [key: string]: SchemaField };
 
-type Compose = Array<Validator> => (Data) => Result;
+type ArraySchema = SchemaRules;
+type ObjectSchema = { [key: string]: SchemaRules };
+
+type Composer = Array<Validator> => (Data) => Result;
 
 /**
  * Run a series of validators (left-to-right) such that all of the
  * validators must succeed. Otherwise, returns the first set of errors
  */
-export const all: Compose = validators => data =>
+export const all: Composer = validators => data =>
   validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
 
 /**
  * Run a series of validators such that at least one of the validators must
  * succeed. Otherwise, returns all of the errors
  */
-export const some: Compose = validators => data =>
+export const some: Composer = validators => data =>
   validators.reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
@@ -49,7 +51,7 @@ export const some: Compose = validators => data =>
 /**
  * Convert an object schema to an array of validators
  */
-type FromObjectSchema = Schema => Array<Validator>;
+type FromObjectSchema = ObjectSchema => Array<Validator>;
 export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
   const defaultVs = [validateIsObject];
 
@@ -72,8 +74,8 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 /**
  * Convert an array schema to an array of validators
  */
-type FromArraySchema = SchemaField => Array<Validator>;
-export const fromArraySchema: SchemaField = (schema = {}) => {
+type FromArraySchema = ArraySchema => Array<Validator>;
+export const fromArraySchema: FromArraySchema = (schema = {}) => {
   const defaultVs = [validateIsArray];
 
   if (!isObject(schema)) return defaultVs;
@@ -87,24 +89,16 @@ export const fromArraySchema: SchemaField = (schema = {}) => {
   return [...defaultVs, ...extraVs];
 };
 
-// /**
-//  * Precomposed validator for objects
-//  */
-// const objectValidator = allOf(
-//   X validateIsObject,
-//   X validateRequiredFields,
-//   validateExtraFields,
-//   X validateFieldsTypecheck,
-//   validateFieldPredicates,
-//   X validateFieldSchemaValidators
-// );
+/**
+ * Precomposed helper for objects
+ */
+type ObjectValidator = ObjectSchema => Validator;
+export const objectValidator: ObjectValidator = schema =>
+  all(fromObjectSchema(schema));
 
-// /**
-//  * Precomposed validator for arrays
-//  */
-// const arrayValidator = allOf(
-//   X validateIsArray,
-//   X validateItemsTypecheck,
-//   validateArrayPredicates,
-//   X validateArraySchemaValidator
-// );
+/**
+ * Precomposed helper for arrays
+ */
+type ArrayValidator = ArraySchema => Validator;
+export const arrayValidator: ArrayValidator = schema =>
+  all(fromArraySchema(schema));

@@ -1,16 +1,12 @@
 import { expect } from 'chai';
-// const {
-//   all,
-//   some,
-//   objectValidator,
-//   arrayValidator,
-// } = require('../lib/compose');
 
 import {
   all,
   some,
   fromObjectSchema,
   fromArraySchema,
+  objectValidator,
+  arrayValidator,
 } from '../src/lib/compose';
 
 import { isOK, isErr, ok, err } from '../src/lib/result';
@@ -19,9 +15,7 @@ import {
   validateIsObject,
   validateObjHasKey,
   validateIsArray,
-  //   validateRequiredFields,
-  //   validateExtraFields,
-  //   validateItemsTypecheck,
+  validateArrayItemsHaveType,
 } from '../src/lib/validators';
 
 describe('compose', () => {
@@ -297,7 +291,7 @@ describe('compose', () => {
     });
 
     it('works as part of a schema', () => {
-      const objectValidator = all(
+      const validateObjectSchema = all(
         fromObjectSchema({
           field2: {
             required: true,
@@ -309,7 +303,7 @@ describe('compose', () => {
       const validateLteThree = n =>
         (n <= 3 ? ok() : err([`${n} was greater than 3`]));
 
-      const arrayValidator = all(
+      const validateArraySchema = all(
         fromArraySchema({
           type: 'number',
           validator: validateLteThree,
@@ -319,7 +313,7 @@ describe('compose', () => {
       const validate = all(
         fromObjectSchema({
           field1: {
-            validator: some([objectValidator, arrayValidator]),
+            validator: some([validateObjectSchema, validateArraySchema]),
           },
         })
       );
@@ -350,64 +344,63 @@ describe('compose', () => {
     });
   });
 
-  // describe('#objectValidator()', () => {
-  //   it('exports a default composed validator for objects', () => {
-  //     const schema = {
-  //       field1: {
-  //         required: true,
-  //         type: 'string',
-  //       },
-  //       field2: {
-  //         type: 'number',
-  //         predicates: [
-  //           {
-  //             test: x => x < 10,
-  //             onError: x => `${x} was >= 10`,
-  //           },
-  //         ],
-  //       },
-  //       field3: {
-  //         type: 'array',
-  //         schemaValidator: validateItemsTypecheck({ type: 'object' }),
-  //       },
-  //     };
-  //     const validate = objectValidator(schema);
-  //     expect(isErr(validate('not an object'))).to.be.true;
-  //     expect(isErr(validate({}))).to.be.true;
-  //     expect(isErr(validate({ field2: 123 }))).to.be.true;
-  //     expect(isErr(validate({ field1: 123 }))).to.be.true;
-  //     expect(isErr(validate({ field1: 'here', field2: [] }))).to.be.true;
-  //     expect(isErr(validate({ field1: 'here', field2: 11 }))).to.be.true;
-  //     expect(isErr(validate({ field1: 'here', field4: 'also here' }))).to.be
-  //       .true;
-  //     expect(isErr(validate({ field1: 'here', field3: [1, 2, 3] }))).to.be.true;
-  //     expect(isOK(validate({ field1: 'here' }))).to.be.true;
-  //     expect(isOK(validate({ field1: 'here', field2: 6 }))).to.be.true;
-  //     expect(isOK(validate({ field1: 'here', field2: 6, field3: [{ a: 1 }] })))
-  //       .to.be.true;
-  //   });
-  // });
-  // describe('#arrayValidator()', () => {
-  //   it('exports a default composed validator for arrays', () => {
-  //     const schema = {
-  //       type: 'object',
-  //       predicates: [
-  //         {
-  //           test: o => Object.keys(o).length < 3,
-  //           onError: o => `${o} did not include abc`,
-  //         },
-  //       ],
-  //       schemaValidator: validateRequiredFields({ field1: { required: true } }),
-  //     };
-  //     const validate = arrayValidator(schema);
-  //     expect(isErr(validate('not an array'))).to.be.true;
-  //     expect(isErr(validate([1, 2, 3]))).to.be.true;
-  //     expect(isErr(validate(['one', 'two', 'three']))).to.be.true;
-  //     expect(isErr(validate([{ field1: '' }, {}]))).to.be.true;
-  //     expect(isErr(validate([{ field1: '', field2: '', field3: '' }]))).to.be
-  //       .true;
-  //     expect(isOK(validate([]))).to.be.true;
-  //     expect(isOK(validate([{ field1: 'abc' }]))).to.be.true;
-  //   });
-  // });
+  describe('#objectValidator()', () => {
+    it('exports a pre-composed helper for objects', () => {
+      const schema = {
+        field1: {
+          required: true,
+          type: 'string',
+        },
+        field2: {
+          type: 'number',
+          validator: x => (x < 10 ? ok() : err([`${x} was >= 10`])),
+        },
+        field3: {
+          type: 'array',
+          validator: validateArrayItemsHaveType('object'),
+        },
+      };
+
+      const validate = objectValidator(schema);
+
+      expect(isErr(validate('not an object'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field2: 123 }))).to.be.true;
+      expect(isErr(validate({ field1: 123 }))).to.be.true;
+      expect(isErr(validate({ field1: 'here', field2: [] }))).to.be.true;
+      expect(isErr(validate({ field1: 'here', field2: 11 }))).to.be.true;
+      // expect(isErr(validate({ field1: 'here', field4: 'also here' }))).to.be
+      //   .true;
+      expect(isErr(validate({ field1: 'here', field3: [1, 2, 3] }))).to.be.true;
+
+      expect(isOK(validate({ field1: 'here' }))).to.be.true;
+      expect(isOK(validate({ field1: 'here', field2: 6 }))).to.be.true;
+      expect(isOK(validate({ field1: 'here', field2: 6, field3: [{ a: 1 }] })))
+        .to.be.true;
+    });
+  });
+
+  describe('#arrayValidator()', () => {
+    it('exports a pre-composed helper for arrays', () => {
+      const hasFewerThan3Keys = o =>
+        (Object.keys(o).length < 3 ? ok() : err([`Object has too many keys`]));
+
+      const schema = {
+        type: 'object',
+        validator: all([hasFewerThan3Keys, validateObjHasKey('field1')]),
+      };
+
+      const validate = arrayValidator(schema);
+
+      expect(isErr(validate('not an array'))).to.be.true;
+      expect(isErr(validate([1, 2, 3]))).to.be.true;
+      expect(isErr(validate(['one', 'two', 'three']))).to.be.true;
+      expect(isErr(validate([{ field1: '' }, {}]))).to.be.true;
+      expect(isErr(validate([{ field1: '', field2: '', field3: '' }]))).to.be
+        .true;
+
+      expect(isOK(validate([]))).to.be.true;
+      expect(isOK(validate([{ field1: 'abc' }]))).to.be.true;
+    });
+  });
 });

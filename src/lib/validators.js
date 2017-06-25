@@ -81,37 +81,3 @@ export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
 //     .filter(k => !schema.hasOwnProperty(k))
 //     .map(k => `Extra field "${k}"`)
 //     .toResult();
-
-/**
- * For each object field, check that its predicates succeed (if it has any)
- */
-// module.exports.validateFieldPredicates = schema => data =>
-//   Object.keys(data)
-//     .filter(k => schema[k] && schema[k].hasOwnProperty('predicates'))
-//     // Apply all the predicates for the given field and flatten the result
-//     .reduce(
-//       (errs, k) => [
-//         ...errs,
-//         ...schema[k].predicates
-//           .filter(p => !p.test(data[k]))
-//           .map(p => p.onError(data[k])),
-//       ],
-//       []
-//     )
-//     .toResult();
-
-/**
- * If there are predicates, do they succeed for every array item?
- */
-// module.exports.validateArrayPredicates = ({ predicates }) => data =>
-//   (predicates
-//     ? predicates
-//         // Apply the predicates to every array item and flatten the error arrays
-//         .reduce(
-//           (errs, p) => [
-//             ...errs,
-//             ...data.filter(d => !p.test(d)).map(p.onError),
-//           ],
-//           []
-//         )
-//     : []).toResult();
