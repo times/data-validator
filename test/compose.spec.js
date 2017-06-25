@@ -6,7 +6,13 @@ import { expect } from 'chai';
 //   arrayValidator,
 // } = require('../lib/compose');
 
-import { all, some, fromObjectSchema } from '../src/lib/compose';
+import {
+  all,
+  some,
+  fromObjectSchema,
+  fromArraySchema,
+} from '../src/lib/compose';
+
 import { isOK, isErr, ok, err } from '../src/lib/result';
 
 import {
@@ -19,7 +25,7 @@ import {
 } from '../src/lib/validators';
 
 describe('compose', () => {
-  describe('#fromObjectSchema', () => {
+  describe('#fromObjectSchema()', () => {
     it('should handle cases where no schema is passed', () => {
       const vs = fromObjectSchema();
       expect(vs.length).to.equal(1);
@@ -128,6 +134,39 @@ describe('compose', () => {
       expect(validate2({ field2: { field1: 12345 } }).errors).to.deep.equal([
         `At field "field2": At field "field1": Data was not an object`,
       ]);
+    });
+  });
+
+  describe('#fromArraySchema()', () => {
+    it('should handle cases where no schema is passed', () => {
+      const vs = fromArraySchema();
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+    });
+
+    it('should handle cases where the schema is not an object', () => {
+      const vs = fromArraySchema('string');
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+    });
+
+    it('should add validators to check the types of fields', () => {
+      const vs = fromArraySchema({
+        type: 'string',
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate([1, 2, 3]))).to.be.true;
+      expect(isErr(validate([1, '2', 3]))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+      expect(isOK(validate(['a', 'b', 'c']))).to.be.true;
     });
   });
 

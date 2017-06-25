@@ -10,6 +10,8 @@ import {
   validateObjHasKey,
   validateObjPropHasType,
   validateObjPropPasses,
+  validateIsArray,
+  validateArrayItemsHaveType,
 } from './validators';
 import type { Validator, Data } from './validators';
 
@@ -24,6 +26,8 @@ type SchemaField = {
 type Schema = { [key: string]: SchemaField };
 
 type Compose = Array<Validator> => (Data) => Result;
+
+type Convert = Schema => Array<Validator>;
 
 /**
  * Run a series of validators (left-to-right) such that all of the
@@ -44,9 +48,8 @@ export const some: Compose = validators => data =>
   }, err([]));
 
 /**
- * Convert a schema to an array of validators
+ * Convert an object schema to an array of validators
  */
-type Convert = Schema => Array<Validator>;
 export const fromObjectSchema: Convert = (schema = {}) => {
   const defaultVs = [validateIsObject];
 
@@ -64,6 +67,28 @@ export const fromObjectSchema: Convert = (schema = {}) => {
 
     return [...vs, ...extraVs];
   }, defaultVs);
+};
+
+/**
+ * Convert an array schema to an array of validators
+ */
+export const fromArraySchema: Convert = (schema = {}) => {
+  const defaultVs = [validateIsArray];
+
+  if (!isObject(schema)) return defaultVs;
+
+  return Object.keys(schema).reduce((vs, k) => {
+    let extraVs = [];
+    if (k === 'type')
+      extraVs = [...extraVs, validateArrayItemsHaveType(schema[k])];
+
+    // if (rules.validator)
+    //   extraVs = [...extraVs, validateObjPropPasses(rules.validator)(k)];
+
+    return [...vs, ...extraVs];
+  }, defaultVs);
+
+  return defaultVs;
 };
 
 // const {

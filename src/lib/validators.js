@@ -5,7 +5,7 @@
  */
 
 import { isObject, isArray, isDate, typechecks } from './helpers';
-import { ok, err, mapErrors } from './result';
+import { ok, err, toResult, mapErrors } from './result';
 
 import type { Result, Errors } from './result';
 
@@ -50,9 +50,7 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
 type ValidateObjPropPasses = Validator => (string) => Validator;
 export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-
-  const res = v(obj[key]);
-  return mapErrors(e => `At field "${key}": ${e}`)(res);
+  return mapErrors(e => `At field "${key}": ${e}`)(v(obj[key]));
 };
 
 /**
@@ -61,6 +59,17 @@ export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
 type ValidateIsArray = Validator;
 export const validateIsArray: ValidateIsArray = data =>
   (isArray(data) ? ok() : err([`Data was not an array`]));
+
+/**
+ * Does each array item typecheck?
+ */
+type ValidateArrayItemsHaveType = string => Validator;
+export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
+  toResult(
+    arr
+      .filter(a => !typechecks(a, type))
+      .map(a => `Item "${a}" failed to typecheck (expected ${type})`)
+  );
 
 /**
  * Are there any extra object fields present?

@@ -3,12 +3,11 @@ import { isOK, isErr } from '../src/lib/result';
 import {
   validateIsObject,
   validateObjHasKey,
-  validateIsArray,
   validateObjPropHasType,
-  //   validateRequiredFields,
+  validateObjPropPasses,
+  validateIsArray,
+  validateArrayItemsHaveType,
   //   validateExtraFields,
-  //   validateObjPropHasType,
-  //   validateItemsTypecheck,
   //   validateFieldPredicates,
   //   validateArrayPredicates,
   //   validateFieldSchemaValidators,
@@ -33,26 +32,6 @@ describe('validators', () => {
       expect(res.errors).to.deep.equal([]);
 
       expect(isOK(validateIsObject({ a: 1, b: 2 }))).to.be.true;
-    });
-  });
-
-  describe('#validateIsArray()', () => {
-    it('should return an Err when the given data is not an array', () => {
-      const res = validateIsArray('string');
-      expect(isErr(res)).to.be.true;
-      expect(res.errors).to.deep.equal([`Data was not an array`]);
-
-      expect(isErr(validateIsArray(1))).to.be.true;
-      expect(isErr(validateIsArray({}))).to.be.true;
-      expect(isErr(validateIsArray(new Date()))).to.be.true;
-    });
-
-    it('should return an OK when the given data is an array', () => {
-      const res = validateIsArray([]);
-      expect(isOK(res)).to.be.true;
-      expect(res.errors).to.deep.equal([]);
-
-      expect(isOK(validateIsArray([1, 2, 3]))).to.be.true;
     });
   });
 
@@ -161,33 +140,68 @@ describe('validators', () => {
     });
   });
 
-  //   describe('#validateItemsTypecheck()', () => {
-  //     const schema = {
-  //       type: 'string',
-  //     };
+  describe('#validateObjPropPasses()', () => {
+    it('should check the given field validator passes', () => {
+      const res1 = validateObjPropPasses(validateIsArray)('field1')({
+        field1: 123,
+      });
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([
+        `At field "field1": Data was not an array`,
+      ]);
 
-  //     const validate = validateItemsTypecheck(schema);
+      const res2 = validateObjPropPasses(validateIsArray)('field1')({
+        field1: [1, 2, 3],
+      });
+      expect(isOK(res2)).to.be.true;
+    });
+  });
 
-  //     it('should return an Err when the given array has items that do not typecheck', () => {
-  //       const res1 = validate([1, '2', '3']);
-  //       expect(isErr(res1)).to.be.true;
-  //       expect(res1.errors).to.deep.equal([
-  //         `Item "1" failed to typecheck (expected string)`,
-  //       ]);
+  describe('#validateIsArray()', () => {
+    it('should return an Err when the given data is not an array', () => {
+      const res = validateIsArray('string');
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([`Data was not an array`]);
 
-  //       const res2 = validate(['1', true]);
-  //       expect(isErr(res2)).to.be.true;
-  //       expect(res2.errors).to.deep.equal([
-  //         `Item "true" failed to typecheck (expected string)`,
-  //       ]);
-  //     });
+      expect(isErr(validateIsArray(1))).to.be.true;
+      expect(isErr(validateIsArray({}))).to.be.true;
+      expect(isErr(validateIsArray(new Date()))).to.be.true;
+    });
 
-  //     it("should return an OK when the given array's items all typecheck", () => {
-  //       const res = validate(['1', '2']);
-  //       expect(isOK(res)).to.be.true;
-  //       expect(res.errors).to.deep.equal([]);
-  //     });
-  //   });
+    it('should return an OK when the given data is an array', () => {
+      const res = validateIsArray([]);
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
+
+      expect(isOK(validateIsArray([1, 2, 3]))).to.be.true;
+    });
+  });
+
+  describe('validateArrayItemsHaveType()', () => {
+    it('should return an Err when the given array has items that do not typecheck', () => {
+      const validate = validateArrayItemsHaveType('string');
+
+      const res1 = validate([1, '2', '3']);
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([
+        `Item "1" failed to typecheck (expected string)`,
+      ]);
+
+      const res2 = validate(['1', true]);
+      expect(isErr(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([
+        `Item "true" failed to typecheck (expected string)`,
+      ]);
+    });
+
+    it("should return an OK when the given array's items all typecheck", () => {
+      const validate = validateArrayItemsHaveType('string');
+
+      const res = validate(['1', '2']);
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
+    });
+  });
 
   //   describe('#validateFieldPredicates()', () => {
   //     const schema = {
