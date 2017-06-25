@@ -3,13 +3,20 @@
 import { isOK, ok, isErr, err } from './result';
 import type { Result } from './result';
 
+import { isObject } from './helpers';
+
+import { validateIsObject, validateObjHasKey } from './validators';
+import type { Validator, Data } from './validators';
+
 /**
  * Types
  */
-type Data = any;
-type Schema = any;
-
-type Validator = Data => Result;
+type SchemaField = {
+  required?: boolean,
+  type?: string,
+  validator?: Validator,
+};
+type Schema = { [key: string]: SchemaField };
 
 type Compose = (...vs: Array<Validator>) => (Data) => Result;
 
@@ -31,8 +38,23 @@ export const some: Compose = (...validators) => data =>
     return isErr(vRes) ? err([...res.errors, ...vRes.errors]) : vRes;
   }, err([]));
 
-// convert :: schema -> [val]
-// const convert = ...
+/**
+ * Convert a schema to an array of validators
+ */
+type Convert = Schema => Array<Validator>;
+export const fromObjectSchema: Convert = (schema = {}) => {
+  const defaultVs = [validateIsObject];
+
+  if (!isObject(schema)) return defaultVs;
+
+  return Object.keys(schema).reduce((vs, k) => {
+    const val = schema[k];
+
+    if (val.required === true) return [...vs, validateObjHasKey(k)];
+
+    return vs;
+  }, defaultVs);
+};
 
 // const {
 //   validateIsObject,
