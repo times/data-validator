@@ -45,6 +45,13 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
 };
 
 /**
+ * If the given object property exists, does it pass the given validator?
+ */
+type ValidateObjPropPasses = Validator => (string) => Validator;
+export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj =>
+  (obj.hasOwnProperty(key) ? v(obj[key]) : ok());
+
+/**
  * Is the given data an array?
  */
 type ValidateIsArray = Validator;

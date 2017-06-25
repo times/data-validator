@@ -9,6 +9,7 @@ import {
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
+  validateObjPropPasses,
 } from './validators';
 import type { Validator, Data } from './validators';
 
@@ -52,11 +53,14 @@ export const fromObjectSchema: Convert = (schema = {}) => {
   if (!isObject(schema)) return defaultVs;
 
   return Object.keys(schema).reduce((vs, k) => {
-    const val = schema[k];
+    const rules = schema[k];
 
     let extraVs = [];
-    if (val.required === true) extraVs = [...extraVs, validateObjHasKey(k)];
-    if (val.type) extraVs = [...extraVs, validateObjPropHasType(val.type)(k)];
+    if (rules.required === true) extraVs = [...extraVs, validateObjHasKey(k)];
+    if (rules.type)
+      extraVs = [...extraVs, validateObjPropHasType(rules.type)(k)];
+    if (rules.validator)
+      extraVs = [...extraVs, validateObjPropPasses(rules.validator)(k)];
 
     return [...vs, ...extraVs];
   }, defaultVs);

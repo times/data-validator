@@ -65,6 +65,47 @@ describe('compose', () => {
       expect(isOK(validate({}))).to.be.true;
       expect(isOK(validate({ field1: 'here' }))).to.be.true;
     });
+
+    it('should add validators for both field existence and field types', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          required: true,
+          type: 'number',
+        },
+        field2: {
+          required: true,
+        },
+        field3: {
+          type: 'array',
+        },
+      });
+      expect(vs.length).to.equal(5);
+
+      const validate = all(vs);
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field1: '123' }))).to.be.true;
+      expect(isErr(validate({ field1: 123 }))).to.be.true;
+      expect(isErr(validate({ field1: 123, field2: {}, field3: 'abc' }))).to.be
+        .true;
+
+      expect(isOK(validate({ field1: 123, field2: '' }))).to.be.true;
+      expect(isOK(validate({ field1: 123, field2: '', field3: [] }))).to.be
+        .true;
+    });
+
+    it('should support nested validators', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          validator: validateIsObject,
+        },
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate({ field1: 'not an object' }))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+      expect(isOK(validate({ field1: {} }))).to.be.true;
+    });
   });
 
   describe('#all()', () => {
