@@ -1,60 +1,35 @@
 // @flow
 
-import { isOK, ok, isErr, err, toResult } from './result';
-import type { Result, Errors } from './result';
+import { isOK, ok, isErr, err } from './result';
+import type { Result } from './result';
 
-// Types
+/**
+ * Types
+ */
 type Data = any;
 type Schema = any;
 
 type Validator = Data => Result;
 
-type Runner = (...vs: Array<Validator>) => (Data) => Result;
-
-// Test validator functions
-const isArray: Validator = data =>
-  (Array.isArray(data) ? ok() : err(['not array']));
-
-const isObject: Validator = data =>
-  (typeof data === 'object' ? ok() : err(['not object']));
-
-// Actual functions
-
-/**
- * Composes a series of validators using the provided `run` function
- *
- * compose :: ([val] -> Result) -> [val] -> val
- */
-type Compose = Runner => (...vs: Array<Validator>) => (Data) => Result;
-const compose: Compose = run => (...validators) => data =>
-  run(...validators)(data);
+type Compose = (...vs: Array<Validator>) => (Data) => Result;
 
 /**
  * Run a series of validators (left-to-right) such that all of the
  * validators must succeed. Otherwise, returns the first set of errors
- *
- * all :: [val] -> data -> Result
  */
-type All = (...vs: Array<Validator>) => (Data) => Result;
-const all: All = (...validators) => data =>
+export const all: Compose = (...validators) => data =>
   validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
 
 /**
  * Run a series of validators such that at least one of the validators must
  * succeed. Otherwise, returns all of the errors
- *
- * some :: [val] -> data -> Result
  */
-type Some = (...vs: Array<Validator>) => (Data) => Result;
-const some: Some = (...validators) => data =>
+export const some: Compose = (...validators) => data =>
   validators.reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
     return isErr(vRes) ? err([...res.errors, ...vRes.errors]) : vRes;
   }, err([]));
-
-export const testAll: Validator = compose(all)(isArray, isObject);
-export const testSome: Validator = compose(some)(isArray, isObject);
 
 // convert :: schema -> [val]
 // const convert = ...
