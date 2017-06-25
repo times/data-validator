@@ -5,7 +5,11 @@ import type { Result } from './result';
 
 import { isObject } from './helpers';
 
-import { validateIsObject, validateObjHasKey } from './validators';
+import {
+  validateIsObject,
+  validateObjHasKey,
+  validateObjPropHasType,
+} from './validators';
 import type { Validator, Data } from './validators';
 
 /**
@@ -18,20 +22,20 @@ type SchemaField = {
 };
 type Schema = { [key: string]: SchemaField };
 
-type Compose = (...vs: Array<Validator>) => (Data) => Result;
+type Compose = Array<Validator> => (Data) => Result;
 
 /**
  * Run a series of validators (left-to-right) such that all of the
  * validators must succeed. Otherwise, returns the first set of errors
  */
-export const all: Compose = (...validators) => data =>
+export const all: Compose = validators => data =>
   validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
 
 /**
  * Run a series of validators such that at least one of the validators must
  * succeed. Otherwise, returns all of the errors
  */
-export const some: Compose = (...validators) => data =>
+export const some: Compose = validators => data =>
   validators.reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
@@ -50,9 +54,11 @@ export const fromObjectSchema: Convert = (schema = {}) => {
   return Object.keys(schema).reduce((vs, k) => {
     const val = schema[k];
 
-    if (val.required === true) return [...vs, validateObjHasKey(k)];
+    let extraVs = [];
+    if (val.required === true) extraVs = [...extraVs, validateObjHasKey(k)];
+    if (val.type) extraVs = [...extraVs, validateObjPropHasType(val.type)(k)];
 
-    return vs;
+    return [...vs, ...extraVs];
   }, defaultVs);
 };
 

@@ -4,9 +4,10 @@ import {
   validateIsObject,
   validateObjHasKey,
   validateIsArray,
+  validateObjPropHasType,
   //   validateRequiredFields,
   //   validateExtraFields,
-  //   validateFieldsTypecheck,
+  //   validateObjPropHasType,
   //   validateItemsTypecheck,
   //   validateFieldPredicates,
   //   validateArrayPredicates,
@@ -118,59 +119,47 @@ describe('validators', () => {
   //     });
   //   });
 
-  //   describe('#validateFieldsTypecheck()', () => {
-  //     const schema = {
-  //       field1: {
-  //         type: 'string',
-  //       },
-  //       field2: {
-  //         type: 'number',
-  //       },
-  //       field3: {},
-  //     };
+  describe('#validateObjPropHasType()', () => {
+    it('should return an Err when the given data has fields that do not typecheck', () => {
+      const res1 = validateObjPropHasType('string')('field1')({
+        field1: 123,
+      });
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([
+        `Field "field1" failed to typecheck (expected string)`,
+      ]);
 
-  //     const validate = validateFieldsTypecheck(schema);
+      const res2 = validateObjPropHasType('number')('field2')({
+        field1: 'a string',
+        field2: 'not a number',
+      });
+      expect(isErr(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([
+        `Field "field2" failed to typecheck (expected number)`,
+      ]);
+    });
 
-  //     it('should return an Err when the given data has fields that do not typecheck', () => {
-  //       const res1 = validate({
-  //         field1: 123,
-  //       });
-  //       expect(isErr(res1)).to.be.true;
-  //       expect(res1.errors).to.deep.equal([
-  //         `Field "field1" failed to typecheck (expected string)`,
-  //       ]);
+    it("should return an OK when the given data's fields all typecheck", () => {
+      const res = validateObjPropHasType('string')('field1')({
+        field1: 'a string',
+        field2: 12345,
+      });
+      expect(isOK(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
+    });
 
-  //       const res2 = validate({
-  //         field1: 'a string',
-  //         field2: 'not a number',
-  //       });
-  //       expect(isErr(res2)).to.be.true;
-  //       expect(res2.errors).to.deep.equal([
-  //         `Field "field2" failed to typecheck (expected number)`,
-  //       ]);
-  //     });
+    it("should return an OK for fields that don't specify a type", () => {
+      const res1 = validateObjPropHasType('string')('field1')({
+        field3: 'a string',
+      });
+      expect(isOK(res1)).to.be.true;
 
-  //     it("should return an OK when the given data's fields all typecheck", () => {
-  //       const res = validate({
-  //         field1: 'a string',
-  //         field2: 12345,
-  //       });
-  //       expect(isOK(res)).to.be.true;
-  //       expect(res.errors).to.deep.equal([]);
-  //     });
-
-  //     it("should return an OK for fields that don't specify a type", () => {
-  //       const res1 = validate({
-  //         field3: 'a string',
-  //       });
-  //       expect(isOK(res1)).to.be.true;
-
-  //       const res2 = validate({
-  //         field3: 123,
-  //       });
-  //       expect(isOK(res2)).to.be.true;
-  //     });
-  //   });
+      const res2 = validateObjPropHasType('string')('field1')({
+        field3: 123,
+      });
+      expect(isOK(res2)).to.be.true;
+    });
+  });
 
   //   describe('#validateItemsTypecheck()', () => {
   //     const schema = {
@@ -443,7 +432,7 @@ describe('validators', () => {
   //       };
 
   //       const schema = {
-  //         schemaValidator: validateFieldsTypecheck(nestedSchema),
+  //         schemaValidator: validateObjPropHasType(nestedSchema),
   //       };
 
   //       const validate = validateArraySchemaValidator(schema);

@@ -24,14 +24,18 @@ describe('compose', () => {
       const vs = fromObjectSchema();
       expect(vs.length).to.equal(1);
 
-      const res = all(...vs)('string');
-
-      expect(isErr(res)).to.be.true;
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
     });
 
     it('should handle cases where the schema is not an object', () => {
       const vs = fromObjectSchema('string');
       expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
     });
 
     it('should add validators to check the existence of required fields', () => {
@@ -41,13 +45,31 @@ describe('compose', () => {
         },
       });
       expect(vs.length).to.equal(2);
-      console.log(vs);
+
+      const validate = all(vs);
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field2: 'here' }))).to.be.true;
+      expect(isOK(validate({ field1: 'here' }))).to.be.true;
+    });
+
+    it('should add validators to check the types of fields', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          type: 'string',
+        },
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate({ field1: 123 }))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+      expect(isOK(validate({ field1: 'here' }))).to.be.true;
     });
   });
 
   describe('#all()', () => {
     it('should compose multiple validators into a single validator such that they all must succeed', () => {
-      const validate = all(validateIsObject, validateObjHasKey('field1'));
+      const validate = all([validateIsObject, validateObjHasKey('field1')]);
 
       expect(isErr(validate('not an object'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
@@ -57,9 +79,9 @@ describe('compose', () => {
     });
 
     it('can compose multiple times', () => {
-      const v1 = all(validateIsObject);
-      const v2 = all(v1, validateObjHasKey('field1'));
-      const validate = all(v2, validateObjHasKey('field2'));
+      const v1 = all([validateIsObject]);
+      const v2 = all([v1, validateObjHasKey('field1')]);
+      const validate = all([v2, validateObjHasKey('field2')]);
 
       expect(isErr(validate('not an object'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
@@ -72,7 +94,7 @@ describe('compose', () => {
     });
 
     it('runs the composed validators in order', () => {
-      const validate = all(validateIsObject, validateObjHasKey('field1'));
+      const validate = all([validateIsObject, validateObjHasKey('field1')]);
 
       expect(validate('not an object').errors).to.deep.equal([
         `Data was not an object`,
@@ -92,12 +114,13 @@ describe('compose', () => {
     });
 
     it('can compose with a brand new validator', () => {
-      const arbitraryValidator = schema => data =>
+      const arbitraryValidator = data =>
         (data.hasOwnProperty('arbitraryField')
           ? ok()
           : err([`Couldn't find arbitraryField`]));
 
-      const validate = all(validateIsObject, arbitraryValidator)({});
+      const validate = all([validateIsObject, arbitraryValidator]);
+
       expect(isErr(validate(''))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
       expect(isOK(validate({ arbitraryField: 'boo' }))).to.be.true;
@@ -106,7 +129,7 @@ describe('compose', () => {
 
   describe('#some()', () => {
     it('should compose multiple validators such that only one needs to succeed', () => {
-      const validate = some(validateIsObject, validateIsArray);
+      const validate = some([validateIsObject, validateIsArray]);
 
       expect(isErr(validate('neither object nor array'))).to.be.true;
       expect(isErr(validate(123))).to.be.true;
@@ -116,7 +139,7 @@ describe('compose', () => {
     });
 
     it('returns errors from all the validators if it fails', () => {
-      const validate = some(validateIsObject, validateIsArray);
+      const validate = some([validateIsObject, validateIsArray]);
       expect(validate(123).errors).to.deep.equal([
         'Data was not an object',
         'Data was not an array',
@@ -166,8 +189,8 @@ describe('compose', () => {
     });
 
     it('can be composed multiple times', () => {
-      const v1 = some(validateIsObject);
-      const validate = some(v1, validateIsArray);
+      const v1 = some([validateIsObject]);
+      const validate = some([v1, validateIsArray]);
 
       expect(isErr(validate(123))).to.be.true;
       expect(isErr(validate('abc'))).to.be.true;

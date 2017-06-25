@@ -34,6 +34,17 @@ export const validateObjHasKey: ValidateObjHasKey = key => obj =>
   (obj.hasOwnProperty(key) ? ok() : err([`Missing required field "${key}"`]));
 
 /**
+ * If the given object property exists, does it typecheck?
+ */
+type ValidateObjPropHasType = string => (string) => Validator;
+export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj => {
+  if (!obj.hasOwnProperty(key)) return ok();
+  return typechecks(obj[key], type)
+    ? ok()
+    : err([`Field "${key}" failed to typecheck (expected ${type})`]);
+};
+
+/**
  * Is the given data an array?
  */
 type ValidateIsArray = Validator;

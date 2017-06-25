@@ -14,21 +14,20 @@ export type Result = OK | Err;
 /**
  * Constructors
  */
-export const ok = (): OK => ({ valid: true, errors: [] });
+type _ok = () => OK;
+export const ok: _ok = () => ({ valid: true, errors: [] });
 
-export const err = (errs: Errors): Err => ({
-  valid: false,
-  errors: errs,
-});
+type _err = Errors => Err;
+export const err: _err = (errs = []) => ({ valid: false, errors: errs });
 
 /**
  * Helpers
  */
 type IsOK = Result => boolean;
-export const isOK: IsOK = r => r.valid;
+export const isOK: IsOK = r => r.valid === true;
 
 type IsErr = Result => boolean;
-export const isErr: IsErr = r => !r.valid;
+export const isErr: IsErr = r => r.valid === false;
 
 type ToResult = Errors => Result;
 export const toResult: ToResult = errs =>
