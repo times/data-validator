@@ -1,13 +1,12 @@
-/**
- * Helper functions should return booleans
- */
+// @flow
 
 /**
  * Is the parameter a valid ISO 8601 date string?
  *
  * Ref: http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime
  */
-const isISOString = str =>
+type IsISOString = any => boolean;
+export const isISOString: IsISOString = str =>
   typeof str === 'string' &&
   str.match(
     /\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z)/
@@ -16,23 +15,27 @@ const isISOString = str =>
 /**
  * Is the parameter a valid date object or string?
  */
-const isDate = val => val instanceof Date || isISOString(val);
+type IsDate = any => boolean;
+export const isDate: IsDate = val => val instanceof Date || isISOString(val);
 
 /**
  * Is the parameter a non-array, non-date object?
  */
-const isObject = data =>
+type IsObject = any => boolean;
+export const isObject: IsObject = data =>
   data && typeof data === 'object' && !isArray(data) && !isDate(data);
 
 /**
  * Is the parameter an array?
  */
-const isArray = arr => Array.isArray(arr);
+type IsArray = any => boolean;
+export const isArray: IsArray = arr => Array.isArray(arr);
 
 /**
  * Does the given value match the given type?
  */
-const typechecks = (val, type) => {
+type Typechecks = (any, string) => boolean;
+export const typechecks: Typechecks = (val, type) => {
   switch (type) {
     case 'array':
       return isArray(val);
@@ -43,12 +46,4 @@ const typechecks = (val, type) => {
     default:
       return typeof val === type;
   }
-};
-
-module.exports = {
-  isISOString,
-  isDate,
-  isObject,
-  isArray,
-  typechecks,
 };

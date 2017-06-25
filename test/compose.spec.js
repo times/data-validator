@@ -18,7 +18,7 @@ import { testAll, testSome } from '../src/lib/compose';
 // } = require('../lib/validators');
 
 describe('compose', () => {
-  it.only('x', () => {
+  it('x', () => {
     console.log(testSome('s'));
   });
 
