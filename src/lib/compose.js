@@ -12,6 +12,7 @@ import {
   validateObjPropPasses,
   validateIsArray,
   validateArrayItemsHaveType,
+  validateArrayItemsPass,
 } from './validators';
 import type { Validator, Data } from './validators';
 
@@ -26,8 +27,6 @@ type SchemaField = {
 type Schema = { [key: string]: SchemaField };
 
 type Compose = Array<Validator> => (Data) => Result;
-
-type Convert = Schema => Array<Validator>;
 
 /**
  * Run a series of validators (left-to-right) such that all of the
@@ -50,7 +49,8 @@ export const some: Compose = validators => data =>
 /**
  * Convert an object schema to an array of validators
  */
-export const fromObjectSchema: Convert = (schema = {}) => {
+type FromObjectSchema = Schema => Array<Validator>;
+export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
   const defaultVs = [validateIsObject];
 
   if (!isObject(schema)) return defaultVs;
@@ -72,63 +72,39 @@ export const fromObjectSchema: Convert = (schema = {}) => {
 /**
  * Convert an array schema to an array of validators
  */
-export const fromArraySchema: Convert = (schema = {}) => {
+type FromArraySchema = SchemaField => Array<Validator>;
+export const fromArraySchema: SchemaField = (schema = {}) => {
   const defaultVs = [validateIsArray];
 
   if (!isObject(schema)) return defaultVs;
 
-  return Object.keys(schema).reduce((vs, k) => {
-    let extraVs = [];
-    if (k === 'type')
-      extraVs = [...extraVs, validateArrayItemsHaveType(schema[k])];
+  let extraVs = [];
+  if (schema.type)
+    extraVs = [...extraVs, validateArrayItemsHaveType(schema.type)];
+  if (schema.validator)
+    extraVs = [...extraVs, validateArrayItemsPass(schema.validator)];
 
-    // if (rules.validator)
-    //   extraVs = [...extraVs, validateObjPropPasses(rules.validator)(k)];
-
-    return [...vs, ...extraVs];
-  }, defaultVs);
-
-  return defaultVs;
+  return [...defaultVs, ...extraVs];
 };
-
-// const {
-//   validateIsObject,
-//   validateIsArray,
-//   validateRequiredFields,
-//   validateExtraFields,
-//   // validateFieldPredicates,
-//   // validateArrayPredicates,
-//   validateFieldsTypecheck,
-//   validateItemsTypecheck,
-//   validateFieldSchemaValidators,
-//   validateArraySchemaValidator,
-// } = require('./validators');
 
 // /**
 //  * Precomposed validator for objects
 //  */
 // const objectValidator = allOf(
-//   validateIsObject,
-//   validateRequiredFields,
+//   X validateIsObject,
+//   X validateRequiredFields,
 //   validateExtraFields,
-//   validateFieldsTypecheck,
-//   // validateFieldPredicates,
-//   validateFieldSchemaValidators
+//   X validateFieldsTypecheck,
+//   validateFieldPredicates,
+//   X validateFieldSchemaValidators
 // );
 
 // /**
 //  * Precomposed validator for arrays
 //  */
 // const arrayValidator = allOf(
-//   validateIsArray,
-//   validateItemsTypecheck,
-//   // validateArrayPredicates,
-//   validateArraySchemaValidator
+//   X validateIsArray,
+//   X validateItemsTypecheck,
+//   validateArrayPredicates,
+//   X validateArraySchemaValidator
 // );
-
-// module.exports = {
-//   allOf,
-//   someOf,
-//   objectValidator,
-//   arrayValidator,
-// };

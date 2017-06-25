@@ -135,6 +135,22 @@ describe('compose', () => {
         `At field "field2": At field "field1": Data was not an object`,
       ]);
     });
+
+    xit('should not allow extra fields when the flag is set', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          type: 'string',
+        },
+        field2: {
+          type: 'number',
+        },
+      });
+
+      const validate = all(vs);
+
+      expect(isErr(validate({ field1: 'xxx', field2: 123, field3: 'yyy' }))).to
+        .be.true;
+    });
   });
 
   describe('#fromArraySchema()', () => {
@@ -167,6 +183,37 @@ describe('compose', () => {
       expect(isErr(validate([1, '2', 3]))).to.be.true;
       expect(isOK(validate([]))).to.be.true;
       expect(isOK(validate(['a', 'b', 'c']))).to.be.true;
+    });
+
+    it('should support item validators', () => {
+      const vs = fromArraySchema({
+        validator: validateIsObject,
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate([1, {}, {}]))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+      expect(isOK(validate([{}, {}]))).to.be.true;
+    });
+
+    it('should return prefixed error messages from item validators', () => {
+      const vs1 = fromArraySchema({
+        validator: validateIsObject,
+      });
+      const validate1 = all(vs1);
+      expect(validate1([{}, 1, {}]).errors).to.deep.equal([
+        `At item 1: Data was not an object`,
+      ]);
+
+      // One level deeper
+      const vs2 = fromArraySchema({
+        validator: all(vs1),
+      });
+      const validate2 = all(vs2);
+      expect(validate2([[{}], [1]]).errors).to.deep.equal([
+        `At item 1: At item 0: Data was not an object`,
+      ]);
     });
   });
 
@@ -249,34 +296,34 @@ describe('compose', () => {
       ]);
     });
 
-    xit('works as part of a schema', () => {
-      const objectSchema = {
-        field2: {
-          required: true,
-          type: 'string',
-        },
-      };
-
-      const arraySchema = {
-        type: 'number',
-        predicates: [
-          {
-            test: n => n <= 3,
-            onError: n => `${n} was greater than 3`,
+    it('works as part of a schema', () => {
+      const objectValidator = all(
+        fromObjectSchema({
+          field2: {
+            required: true,
+            type: 'string',
           },
-        ],
-      };
+        })
+      );
 
-      const schema = {
-        field1: {
-          schemaValidator: some(
-            objectValidator(objectSchema),
-            arrayValidator(arraySchema)
-          ),
-        },
-      };
+      const validateLteThree = n =>
+        (n <= 3 ? ok() : err([`${n} was greater than 3`]));
 
-      const validate = objectValidator(schema);
+      const arrayValidator = all(
+        fromArraySchema({
+          type: 'number',
+          validator: validateLteThree,
+        })
+      );
+
+      const validate = all(
+        fromObjectSchema({
+          field1: {
+            validator: some([objectValidator, arrayValidator]),
+          },
+        })
+      );
+
       expect(isErr(validate({ field1: 123 }))).to.be.true;
       expect(isErr(validate({ field1: 'abc' }))).to.be.true;
 

@@ -1,5 +1,13 @@
 import { expect } from 'chai';
-import { ok, err, isOK, isErr, toResult } from '../src/lib/result';
+import {
+  ok,
+  err,
+  isOK,
+  isErr,
+  toResult,
+  mapErrors,
+  flattenResults,
+} from '../src/lib/result';
 
 describe('result', () => {
   describe('#ok()', () => {
@@ -56,6 +64,41 @@ describe('result', () => {
     it('constructs an Err object from a non-empty array', () => {
       expect(isErr(toResult([]))).to.be.false;
       expect(isErr(toResult(['abc']))).to.be.true;
+    });
+  });
+
+  describe('#mapErrors()', () => {
+    it('should not change the type of the Result', () => {
+      const map = mapErrors(e => 'something');
+
+      expect(isOK(map(ok())));
+      expect(isErr(map(err())));
+    });
+
+    it('should apply a function to each error in a Result', () => {
+      const map = mapErrors((e, i) => `${i + 1}. ${e}`);
+      const res = err(['a', 'b', 'c']);
+
+      expect(map(res).errors).to.deep.equal(['1. a', '2. b', '3. c']);
+    });
+  });
+
+  describe('#flattenResults()', () => {
+    it('should flatten an array of OKs into an OK', () => {
+      const res = flattenResults([ok(), ok(), ok()]);
+      expect(isOK(res)).to.be.true;
+    });
+
+    it('should flatten an array of Errs into an Err', () => {
+      const res = flattenResults([err(['a']), err(['b']), err(['c'])]);
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal(['a', 'b', 'c']);
+    });
+
+    it('should flatten a mixed array of Results into an Err', () => {
+      const res = flattenResults([err(['a']), ok(), err(['c'])]);
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal(['a', 'c']);
     });
   });
 });

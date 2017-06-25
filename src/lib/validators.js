@@ -1,12 +1,8 @@
 // @flow
 
-/**
- * Check functions should return Errors
- */
+import { isObject, isArray, typechecks } from './helpers';
 
-import { isObject, isArray, isDate, typechecks } from './helpers';
-import { ok, err, toResult, mapErrors } from './result';
-
+import { ok, err, toResult, mapErrors, flattenResults } from './result';
 import type { Result, Errors } from './result';
 
 /**
@@ -15,9 +11,6 @@ import type { Result, Errors } from './result';
 export type Data = any;
 
 export type Validator = Data => Result;
-
-// This will move later
-// Array.prototype.toResult = toResult;
 
 /**
  * Is the given data an object?
@@ -72,21 +65,21 @@ export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => ar
   );
 
 /**
+ * Does each array item pass the given validator?
+ */
+type ValidateArrayItemsPass = Validator => Validator;
+export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
+  flattenResults(
+    arr.map(v).map((res, i) => mapErrors(e => `At item ${i}: ${e}`)(res))
+  );
+
+/**
  * Are there any extra object fields present?
  */
 // module.exports.validateExtraFields = schema => data =>
 //   Object.keys(data)
 //     .filter(k => !schema.hasOwnProperty(k))
 //     .map(k => `Extra field "${k}"`)
-//     .toResult();
-
-/**
- * Does each array item typecheck?
- */
-// module.exports.validateItemsTypecheck = ({ type }) => data =>
-//   data
-//     .filter(d => !typechecks(d, type))
-//     .map(d => `Item "${d}" failed to typecheck (expected ${type})`)
 //     .toResult();
 
 /**
@@ -118,41 +111,6 @@ export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => ar
 //           (errs, p) => [
 //             ...errs,
 //             ...data.filter(d => !p.test(d)).map(p.onError),
-//           ],
-//           []
-//         )
-//     : []).toResult();
-
-/**
- * If any object fields have schemaValidators attached, do they succeed?
- */
-// module.exports.validateFieldSchemaValidators = schema => data =>
-//   Object.keys(data)
-//     .filter(k => schema[k].hasOwnProperty('schemaValidator'))
-//     // Apply the nested schemaValidator and flatten the error arrays
-//     .reduce(
-//       (errs, k) => [
-//         ...errs,
-//         ...schema[k]
-//           .schemaValidator(data[k])
-//           .errors.map(e => `At field "${k}": ${e}`),
-//       ],
-//       []
-//     )
-//     .toResult();
-
-/**
- * If the array has a schemaValidator attached, does it succeed?
- */
-// module.exports.validateArraySchemaValidator = ({ schemaValidator }) => data =>
-//   (schemaValidator
-//     ? data
-//         // Apply the schemaValidator to every item and flatten the error arrays
-//         .map(schemaValidator)
-//         .reduce(
-//           (errs, res, i) => [
-//             ...errs,
-//             ...res.errors.map(e => `At item ${i}: ${e}`),
 //           ],
 //           []
 //         )
