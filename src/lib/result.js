@@ -32,3 +32,6 @@ export const isErr: IsErr = r => r.valid === false;
 type ToResult = Errors => Result;
 export const toResult: ToResult = errs =>
   (errs.length === 0 ? ok() : err(errs));
+
+type MapErrors = ((string) => string) => (Result) => Result;
+export const mapErrors: MapErrors = f => r => toResult(r.errors.map(f));

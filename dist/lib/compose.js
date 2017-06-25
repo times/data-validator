@@ -3,50 +3,26 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.testSome = exports.testAll = undefined;
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+exports.fromObjectSchema = exports.some = exports.all = undefined;
 
 var _result = require('./result');
 
+var _helpers = require('./helpers');
+
+var _validators = require('./validators');
+
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-// Functions
+/**
+ * Run a series of validators (left-to-right) such that all of the
+ * validators must succeed. Otherwise, returns the first set of errors
+ */
 
 
-// Types
-var isArray = function isArray(data) {
-  return Array.isArray(data) ? (0, _result.ok)() : (0, _result.err)(['not array']);
-};
-
-var isObject = function isObject(data) {
-  return (typeof data === 'undefined' ? 'undefined' : _typeof(data)) === 'object' ? (0, _result.ok)() : (0, _result.err)(['not object']);
-};
-
-// const compose: Validator = (run: Runner) => (vs: Array<Validator>) => (
-//   data: Data
-// ) => {
-//   return run(vs)(data);
-// };
-
-var compose = function compose(run) {
-  return function () {
-    for (var _len = arguments.length, validators = Array(_len), _key = 0; _key < _len; _key++) {
-      validators[_key] = arguments[_key];
-    }
-
-    return function (data) {
-      return run.apply(undefined, validators)(data);
-    };
-  };
-};
-
-// all :: [val] -> data -> Result
-var all = function all() {
-  for (var _len2 = arguments.length, validators = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-    validators[_key2] = arguments[_key2];
-  }
-
+/**
+ * Types
+ */
+var all = exports.all = function all(validators) {
   return function (data) {
     return validators.reduce(function (res, v) {
       return (0, _result.isOK)(res) ? v(data) : res;
@@ -54,12 +30,11 @@ var all = function all() {
   };
 };
 
-// some :: [val] -> data -> Result
-var some = function some() {
-  for (var _len3 = arguments.length, validators = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-    validators[_key3] = arguments[_key3];
-  }
-
+/**
+ * Run a series of validators such that at least one of the validators must
+ * succeed. Otherwise, returns all of the errors
+ */
+var some = exports.some = function some(validators) {
   return function (data) {
     return validators.reduce(function (res, v) {
       if ((0, _result.isOK)(res)) return res;
@@ -69,19 +44,27 @@ var some = function some() {
   };
 };
 
-var testAll = exports.testAll = compose(all)(isArray, isObject);
-var testSome = exports.testSome = compose(some)(isArray, isObject);
+/**
+ * Convert a schema to an array of validators
+ */
+var fromObjectSchema = exports.fromObjectSchema = function fromObjectSchema() {
+  var schema = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-// const all = vs => data => {};
+  var defaultVs = [_validators.validateIsObject];
 
-// const all: Runner = (...validators) => data =>
-//   validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
+  if (!(0, _helpers.isObject)(schema)) return defaultVs;
 
-// val :: data -> Result
-// compose :: ([val] -> Result) -> [val] -> val
-// all :: [val] -> Result
-// some :: [val] -> Result
-// convert :: schema -> [val]
+  return Object.keys(schema).reduce(function (vs, k) {
+    var rules = schema[k];
+
+    var extraVs = [];
+    if (rules.required === true) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateObjHasKey)(k)]);
+    if (rules.type) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateObjPropHasType)(rules.type)(k)]);
+    if (rules.validator) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateObjPropPasses)(rules.validator)(k)]);
+
+    return [].concat(_toConsumableArray(vs), _toConsumableArray(extraVs));
+  }, defaultVs);
+};
 
 // const {
 //   validateIsObject,
@@ -95,24 +78,6 @@ var testSome = exports.testSome = compose(some)(isArray, isObject);
 //   validateFieldSchemaValidators,
 //   validateArraySchemaValidator,
 // } = require('./validators');
-
-// /**
-//  * Composes a series of validators (left-to-right) such that all of the
-//  * validators must succeed. Otherwise, returns the first set of errors.
-//  * All validators are passed the same schema and data
-//  */
-
-// *
-//  * Composes a series of validators that are already applied to schemas,
-//  * such that at least one of the validators must succeed. Otherwise, returns
-//  * all of the errors
-
-// const someOf = (...validatorsWithSchemas) => data =>
-// validatorsWithSchemas.reduce((res, v) => {
-//   if (isOK(res)) return res;
-//   const vRes = v(data);
-//   return isErr(vRes) ? err([...res.errors, ...vRes.errors]) : vRes;
-// }, err());
 
 // /**
 //  * Precomposed validator for objects

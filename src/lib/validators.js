@@ -5,7 +5,7 @@
  */
 
 import { isObject, isArray, isDate, typechecks } from './helpers';
-import { ok, err, toResult } from './result';
+import { ok, err, mapErrors } from './result';
 
 import type { Result, Errors } from './result';
 
@@ -48,8 +48,12 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
  * If the given object property exists, does it pass the given validator?
  */
 type ValidateObjPropPasses = Validator => (string) => Validator;
-export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj =>
-  (obj.hasOwnProperty(key) ? v(obj[key]) : ok());
+export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
+  if (!obj.hasOwnProperty(key)) return ok();
+
+  const res = v(obj[key]);
+  return mapErrors(e => `At field "${key}": ${e}`)(res);
+};
 
 /**
  * Is the given data an array?
@@ -59,32 +63,12 @@ export const validateIsArray: ValidateIsArray = data =>
   (isArray(data) ? ok() : err([`Data was not an array`]));
 
 /**
- * Are all the required object fields present?
- */
-// module.exports.validateRequiredFields = schema => data =>
-//   Object.keys(schema)
-//     .filter(k => schema[k].required)
-//     .filter(k => !data.hasOwnProperty(k))
-//     .map(k => `Missing required field "${k}"`)
-//     .toResult();
-
-/**
  * Are there any extra object fields present?
  */
 // module.exports.validateExtraFields = schema => data =>
 //   Object.keys(data)
 //     .filter(k => !schema.hasOwnProperty(k))
 //     .map(k => `Extra field "${k}"`)
-//     .toResult();
-
-/**
- * Does each object field typecheck?
- */
-// module.exports.validateFieldsTypecheck = schema => data =>
-//   Object.keys(data)
-//     .filter(k => schema[k] && schema[k].hasOwnProperty('type'))
-//     .filter(k => !typechecks(data[k], schema[k].type))
-//     .map(k => `Field "${k}" failed to typecheck (expected ${schema[k].type})`)
 //     .toResult();
 
 /**

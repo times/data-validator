@@ -106,6 +106,29 @@ describe('compose', () => {
       expect(isOK(validate({}))).to.be.true;
       expect(isOK(validate({ field1: {} }))).to.be.true;
     });
+
+    it('should return prefixed error messages from nested validators', () => {
+      const vs1 = fromObjectSchema({
+        field1: {
+          validator: validateIsObject,
+        },
+      });
+      const validate1 = all(vs1);
+      expect(validate1({ field1: 12345 }).errors).to.deep.equal([
+        `At field "field1": Data was not an object`,
+      ]);
+
+      // One level deeper
+      const vs2 = fromObjectSchema({
+        field2: {
+          validator: all(vs1),
+        },
+      });
+      const validate2 = all(vs2);
+      expect(validate2({ field2: { field1: 12345 } }).errors).to.deep.equal([
+        `At field "field2": At field "field1": Data was not an object`,
+      ]);
+    });
   });
 
   describe('#all()', () => {
