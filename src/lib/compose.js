@@ -25,8 +25,8 @@ type SchemaRules = {
   validator?: Validator,
 };
 
-type ArraySchema = SchemaRules;
-type ObjectSchema = { [key: string]: SchemaRules };
+export type ArraySchema = SchemaRules;
+export type ObjectSchema = { [key: string]: SchemaRules };
 
 type Composer = Array<Validator> => (Data) => Result;
 
@@ -48,6 +48,10 @@ export const some: Composer = validators => data =>
     return isErr(vRes) ? err([...res.errors, ...vRes.errors]) : vRes;
   }, err([]));
 
+// Helper
+type Flatten = (Array<Validator>, Array<Validator>) => Array<Validator>;
+const flatten: Flatten = (acc, vs) => [...acc, ...vs];
+
 /**
  * Convert an object schema to an array of validators
  */
@@ -57,18 +61,23 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 
   if (!isObject(schema)) return defaultVs;
 
-  return Object.keys(schema).reduce((vs, k) => {
-    const rules = schema[k];
+  return Object.keys(schema)
+    .map(k => {
+      const rules = schema[k];
 
-    let extraVs = [];
-    if (rules.required === true) extraVs = [...extraVs, validateObjHasKey(k)];
-    if (rules.type)
-      extraVs = [...extraVs, validateObjPropHasType(rules.type)(k)];
-    if (rules.validator)
-      extraVs = [...extraVs, validateObjPropPasses(rules.validator)(k)];
-
-    return [...vs, ...extraVs];
-  }, defaultVs);
+      return Object.keys(rules)
+        .map(r => {
+          if (r === 'required' && rules[r]) {
+            return rules[r] === true ? [validateObjHasKey(k)] : [];
+          } else if (r === 'type' && rules[r]) {
+            return [validateObjPropHasType(rules[r])(k)];
+          } else if (r === 'validator' && rules[r]) {
+            return [validateObjPropPasses(rules[r])(k)];
+          } else return [];
+        })
+        .reduce(flatten, []);
+    })
+    .reduce(flatten, defaultVs);
 };
 
 /**
@@ -80,13 +89,15 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
 
   if (!isObject(schema)) return defaultVs;
 
-  let extraVs = [];
-  if (schema.type)
-    extraVs = [...extraVs, validateArrayItemsHaveType(schema.type)];
-  if (schema.validator)
-    extraVs = [...extraVs, validateArrayItemsPass(schema.validator)];
-
-  return [...defaultVs, ...extraVs];
+  return Object.keys(schema)
+    .map(k => {
+      if (k === 'type' && schema[k]) {
+        return [validateArrayItemsHaveType(schema[k])];
+      } else if (k === 'validator' && schema[k]) {
+        return [validateArrayItemsPass(schema[k])];
+      } else return [];
+    })
+    .reduce(flatten, defaultVs);
 };
 
 /**

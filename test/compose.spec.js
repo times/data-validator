@@ -39,17 +39,25 @@ describe('compose', () => {
     });
 
     it('should add validators to check the existence of required fields', () => {
-      const vs = fromObjectSchema({
+      const vs1 = fromObjectSchema({
         field1: {
           required: true,
         },
       });
-      expect(vs.length).to.equal(2);
+      expect(vs1.length).to.equal(2);
 
-      const validate = all(vs);
-      expect(isErr(validate({}))).to.be.true;
-      expect(isErr(validate({ field2: 'here' }))).to.be.true;
-      expect(isOK(validate({ field1: 'here' }))).to.be.true;
+      const validate1 = all(vs1);
+      expect(isErr(validate1({}))).to.be.true;
+      expect(isErr(validate1({ field2: 'here' }))).to.be.true;
+      expect(isOK(validate1({ field1: 'here' }))).to.be.true;
+
+      // Don't add the rule when `required` is not `true`
+      const vs2 = fromObjectSchema({
+        field1: {
+          required: 123,
+        },
+      });
+      expect(vs2.length).to.equal(1);
     });
 
     it('should add validators to check the types of fields', () => {
@@ -130,6 +138,16 @@ describe('compose', () => {
       ]);
     });
 
+    it('should ignore other schema fields', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          otherRule: true,
+        },
+      });
+      const validate = all(vs);
+      expect(vs.length).to.equal(1);
+    });
+
     xit('should not allow extra fields when the flag is set', () => {
       const vs = fromObjectSchema({
         field1: {
@@ -208,6 +226,14 @@ describe('compose', () => {
       expect(validate2([[{}], [1]]).errors).to.deep.equal([
         `At item 1: At item 0: Data was not an object`,
       ]);
+    });
+
+    it('should ignore other schema fields', () => {
+      const vs = fromArraySchema({
+        required: true,
+      });
+      const validate = all(vs);
+      expect(vs.length).to.equal(1);
     });
   });
 
