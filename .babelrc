@@ -1,0 +1,13 @@
+{
+  presets: ["es2015"],
+  plugins: [
+    "transform-flow-strip-types", "babel-plugin-transform-object-rest-spread"
+  ],
+  "env": {
+    "test": {
+      "plugins": [
+        "istanbul"
+      ]
+    }
+  }
+}
