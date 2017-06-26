@@ -60,10 +60,6 @@ describe('compose', () => {
       expect(validate({ field2: 'here' }).errors).to.deep.equal([
         `Missing required field "field1"`,
       ]);
-
-      // expect(
-      //   validate({ field1: 'here', field3: 'also here' }).errors
-      // ).to.deep.equal([`Extra field "field3"`]);
     });
 
     it('can compose with a brand new validator', () => {
