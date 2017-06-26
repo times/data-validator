@@ -5,8 +5,6 @@ import { isObject, isArray, isType } from './helpers';
 import { ok, err, toResult, mapErrors, flattenResults } from './result';
 import type { Result, Errors } from './result';
 
-import type { ObjectSchema } from './compose';
-
 /**
  * Types
  */
@@ -51,11 +49,11 @@ export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
 /**
  * Does the object have any fields not present in the schema?
  */
-type ValidateObjNoExtraFields = ObjectSchema => Validator;
-export const validateObjNoExtraFields: ValidateObjNoExtraFields = schema => obj =>
+type ValidateObjOnlyHasKeys = Array<string> => Validator;
+export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = keys => obj =>
   toResult(
     Object.keys(obj)
-      .filter(k => !schema.hasOwnProperty(k))
+      .filter(k => !keys.includes(k))
       .map(k => `Extra field "${k}"`)
   );
 

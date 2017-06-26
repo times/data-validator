@@ -5,7 +5,7 @@ import {
   validateObjHasKey,
   validateObjPropHasType,
   validateObjPropPasses,
-  validateObjNoExtraFields,
+  validateObjOnlyHasKeys,
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
@@ -116,13 +116,13 @@ describe('validators', () => {
     });
   });
 
-  describe('#validateObjNoExtraFields', () => {
+  describe('#validateObjOnlyHasKeys', () => {
     const schema = {
       field1: {},
       field2: {},
     };
 
-    const validate = validateObjNoExtraFields(schema);
+    const validate = validateObjOnlyHasKeys(Object.keys(schema));
 
     it('should return an Err when the given data has extra fields', () => {
       const res1 = validate({

@@ -4,6 +4,7 @@ import {
   all,
   some,
   fromObjectSchema,
+  fromObjectSchemaStrict,
   fromArraySchema,
   objectValidator,
   arrayValidator,
@@ -19,224 +20,6 @@ import {
 } from '../src/lib/validators';
 
 describe('compose', () => {
-  describe('#fromObjectSchema()', () => {
-    it('should handle cases where no schema is passed', () => {
-      const vs = fromObjectSchema();
-      expect(vs.length).to.equal(1);
-
-      const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate({}))).to.be.true;
-    });
-
-    it('should handle cases where the schema is not an object', () => {
-      const vs = fromObjectSchema('string');
-      expect(vs.length).to.equal(1);
-
-      const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate({}))).to.be.true;
-    });
-
-    it('should add validators to check the existence of required fields', () => {
-      const vs1 = fromObjectSchema({
-        field1: {
-          required: true,
-        },
-      });
-      expect(vs1.length).to.equal(2);
-
-      const validate1 = all(vs1);
-      expect(isErr(validate1({}))).to.be.true;
-      expect(isErr(validate1({ field2: 'here' }))).to.be.true;
-      expect(isOK(validate1({ field1: 'here' }))).to.be.true;
-
-      // Don't add the rule when `required` is not `true`
-      const vs2 = fromObjectSchema({
-        field1: {
-          required: 123,
-        },
-      });
-      expect(vs2.length).to.equal(1);
-    });
-
-    it('should add validators to check the types of fields', () => {
-      const vs = fromObjectSchema({
-        field1: {
-          type: 'string',
-        },
-      });
-      expect(vs.length).to.equal(2);
-
-      const validate = all(vs);
-      expect(isErr(validate({ field1: 123 }))).to.be.true;
-      expect(isOK(validate({}))).to.be.true;
-      expect(isOK(validate({ field1: 'here' }))).to.be.true;
-    });
-
-    it('should add validators for both field existence and field types', () => {
-      const vs = fromObjectSchema({
-        field1: {
-          required: true,
-          type: 'number',
-        },
-        field2: {
-          required: true,
-        },
-        field3: {
-          type: 'array',
-        },
-      });
-      expect(vs.length).to.equal(5);
-
-      const validate = all(vs);
-      expect(isErr(validate({}))).to.be.true;
-      expect(isErr(validate({ field1: '123' }))).to.be.true;
-      expect(isErr(validate({ field1: 123 }))).to.be.true;
-      expect(isErr(validate({ field1: 123, field2: {}, field3: 'abc' }))).to.be
-        .true;
-
-      expect(isOK(validate({ field1: 123, field2: '' }))).to.be.true;
-      expect(isOK(validate({ field1: 123, field2: '', field3: [] }))).to.be
-        .true;
-    });
-
-    it('should support nested validators', () => {
-      const vs = fromObjectSchema({
-        field1: {
-          validator: validateIsObject,
-        },
-      });
-      expect(vs.length).to.equal(2);
-
-      const validate = all(vs);
-      expect(isErr(validate({ field1: 'not an object' }))).to.be.true;
-      expect(isOK(validate({}))).to.be.true;
-      expect(isOK(validate({ field1: {} }))).to.be.true;
-    });
-
-    it('should return prefixed error messages from nested validators', () => {
-      const vs1 = fromObjectSchema({
-        field1: {
-          validator: validateIsObject,
-        },
-      });
-      const validate1 = all(vs1);
-      expect(validate1({ field1: 12345 }).errors).to.deep.equal([
-        `At field "field1": Data was not an object`,
-      ]);
-
-      // One level deeper
-      const vs2 = fromObjectSchema({
-        field2: {
-          validator: all(vs1),
-        },
-      });
-      const validate2 = all(vs2);
-      expect(validate2({ field2: { field1: 12345 } }).errors).to.deep.equal([
-        `At field "field2": At field "field1": Data was not an object`,
-      ]);
-    });
-
-    it('should ignore other schema fields', () => {
-      const vs = fromObjectSchema({
-        field1: {
-          otherRule: true,
-        },
-      });
-      const validate = all(vs);
-      expect(vs.length).to.equal(1);
-    });
-
-    xit('should not allow extra fields when the flag is set', () => {
-      const vs = fromObjectSchema({
-        field1: {
-          type: 'string',
-        },
-        field2: {
-          type: 'number',
-        },
-      });
-
-      const validate = all(vs);
-
-      expect(isErr(validate({ field1: 'xxx', field2: 123, field3: 'yyy' }))).to
-        .be.true;
-    });
-  });
-
-  describe('#fromArraySchema()', () => {
-    it('should handle cases where no schema is passed', () => {
-      const vs = fromArraySchema();
-      expect(vs.length).to.equal(1);
-
-      const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate([]))).to.be.true;
-    });
-
-    it('should handle cases where the schema is not an object', () => {
-      const vs = fromArraySchema('string');
-      expect(vs.length).to.equal(1);
-
-      const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate([]))).to.be.true;
-    });
-
-    it('should add validators to check the types of fields', () => {
-      const vs = fromArraySchema({
-        type: 'string',
-      });
-      expect(vs.length).to.equal(2);
-
-      const validate = all(vs);
-      expect(isErr(validate([1, 2, 3]))).to.be.true;
-      expect(isErr(validate([1, '2', 3]))).to.be.true;
-      expect(isOK(validate([]))).to.be.true;
-      expect(isOK(validate(['a', 'b', 'c']))).to.be.true;
-    });
-
-    it('should support item validators', () => {
-      const vs = fromArraySchema({
-        validator: validateIsObject,
-      });
-      expect(vs.length).to.equal(2);
-
-      const validate = all(vs);
-      expect(isErr(validate([1, {}, {}]))).to.be.true;
-      expect(isOK(validate([]))).to.be.true;
-      expect(isOK(validate([{}, {}]))).to.be.true;
-    });
-
-    it('should return prefixed error messages from item validators', () => {
-      const vs1 = fromArraySchema({
-        validator: validateIsObject,
-      });
-      const validate1 = all(vs1);
-      expect(validate1([{}, 1, {}]).errors).to.deep.equal([
-        `At item 1: Data was not an object`,
-      ]);
-
-      // One level deeper
-      const vs2 = fromArraySchema({
-        validator: all(vs1),
-      });
-      const validate2 = all(vs2);
-      expect(validate2([[{}], [1]]).errors).to.deep.equal([
-        `At item 1: At item 0: Data was not an object`,
-      ]);
-    });
-
-    it('should ignore other schema fields', () => {
-      const vs = fromArraySchema({
-        required: true,
-      });
-      const validate = all(vs);
-      expect(vs.length).to.equal(1);
-    });
-  });
-
   describe('#all()', () => {
     it('should compose multiple validators into a single validator such that they all must succeed', () => {
       const validate = all([validateIsObject, validateObjHasKey('field1')]);
@@ -370,6 +153,242 @@ describe('compose', () => {
     });
   });
 
+  describe('#fromObjectSchema()', () => {
+    it('should handle cases where no schema is passed', () => {
+      const vs = fromObjectSchema();
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+    });
+
+    it('should handle cases where the schema is not an object', () => {
+      const vs = fromObjectSchema('string');
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+    });
+
+    it('should add validators to check the existence of required fields', () => {
+      const vs1 = fromObjectSchema({
+        field1: {
+          required: true,
+        },
+      });
+      expect(vs1.length).to.equal(2);
+
+      const validate1 = all(vs1);
+      expect(isErr(validate1({}))).to.be.true;
+      expect(isErr(validate1({ field2: 'here' }))).to.be.true;
+      expect(isOK(validate1({ field1: 'here' }))).to.be.true;
+
+      // Don't add the rule when `required` is not `true`
+      const vs2 = fromObjectSchema({
+        field1: {
+          required: 123,
+        },
+      });
+      expect(vs2.length).to.equal(1);
+    });
+
+    it('should add validators to check the types of fields', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          type: 'string',
+        },
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate({ field1: 123 }))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+      expect(isOK(validate({ field1: 'here' }))).to.be.true;
+    });
+
+    it('should add validators for both field existence and field types', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          required: true,
+          type: 'number',
+        },
+        field2: {
+          required: true,
+        },
+        field3: {
+          type: 'array',
+        },
+      });
+      expect(vs.length).to.equal(5);
+
+      const validate = all(vs);
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field1: '123' }))).to.be.true;
+      expect(isErr(validate({ field1: 123 }))).to.be.true;
+      expect(isErr(validate({ field1: 123, field2: {}, field3: 'abc' }))).to.be
+        .true;
+
+      expect(isOK(validate({ field1: 123, field2: '' }))).to.be.true;
+      expect(isOK(validate({ field1: 123, field2: '', field3: [] }))).to.be
+        .true;
+    });
+
+    it('should support nested validators', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          validator: validateIsObject,
+        },
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate({ field1: 'not an object' }))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+      expect(isOK(validate({ field1: {} }))).to.be.true;
+    });
+
+    it('should return prefixed error messages from nested validators', () => {
+      const vs1 = fromObjectSchema({
+        field1: {
+          validator: validateIsObject,
+        },
+      });
+      const validate1 = all(vs1);
+      expect(validate1({ field1: 12345 }).errors).to.deep.equal([
+        `At field "field1": Data was not an object`,
+      ]);
+
+      // One level deeper
+      const vs2 = fromObjectSchema({
+        field2: {
+          validator: all(vs1),
+        },
+      });
+      const validate2 = all(vs2);
+      expect(validate2({ field2: { field1: 12345 } }).errors).to.deep.equal([
+        `At field "field2": At field "field1": Data was not an object`,
+      ]);
+    });
+
+    it('should ignore other schema fields', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          otherRule: true,
+        },
+      });
+      const validate = all(vs);
+      expect(vs.length).to.equal(1);
+    });
+  });
+
+  describe('#fromObjectSchemaStrict()', () => {
+    it('should handle cases where no schema is passed', () => {
+      const vs = fromObjectSchemaStrict();
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+    });
+
+    it('should handle cases where the schema is not an object', () => {
+      const vs = fromObjectSchemaStrict('string');
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate({}))).to.be.true;
+    });
+
+    it('should add a check to forbid extra fields', () => {
+      const vs1 = fromObjectSchemaStrict({});
+      expect(vs1.length).to.equal(2);
+
+      const vs2 = fromObjectSchemaStrict({
+        field1: {},
+        field2: {},
+      });
+      const validate2 = all(vs2);
+
+      expect(isErr(validate2({ field1: 'xxx', field2: 123, field3: 'yyy' }))).to
+        .be.true;
+    });
+  });
+
+  describe('#fromArraySchema()', () => {
+    it('should handle cases where no schema is passed', () => {
+      const vs = fromArraySchema();
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+    });
+
+    it('should handle cases where the schema is not an object', () => {
+      const vs = fromArraySchema('string');
+      expect(vs.length).to.equal(1);
+
+      const validate = all(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+    });
+
+    it('should add validators to check the types of fields', () => {
+      const vs = fromArraySchema({
+        type: 'string',
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate([1, 2, 3]))).to.be.true;
+      expect(isErr(validate([1, '2', 3]))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+      expect(isOK(validate(['a', 'b', 'c']))).to.be.true;
+    });
+
+    it('should support item validators', () => {
+      const vs = fromArraySchema({
+        validator: validateIsObject,
+      });
+      expect(vs.length).to.equal(2);
+
+      const validate = all(vs);
+      expect(isErr(validate([1, {}, {}]))).to.be.true;
+      expect(isOK(validate([]))).to.be.true;
+      expect(isOK(validate([{}, {}]))).to.be.true;
+    });
+
+    it('should return prefixed error messages from item validators', () => {
+      const vs1 = fromArraySchema({
+        validator: validateIsObject,
+      });
+      const validate1 = all(vs1);
+      expect(validate1([{}, 1, {}]).errors).to.deep.equal([
+        `At item 1: Data was not an object`,
+      ]);
+
+      // One level deeper
+      const vs2 = fromArraySchema({
+        validator: all(vs1),
+      });
+      const validate2 = all(vs2);
+      expect(validate2([[{}], [1]]).errors).to.deep.equal([
+        `At item 1: At item 0: Data was not an object`,
+      ]);
+    });
+
+    it('should ignore other schema fields', () => {
+      const vs = fromArraySchema({
+        required: true,
+      });
+      const validate = all(vs);
+      expect(vs.length).to.equal(1);
+    });
+  });
+
   describe('#objectValidator()', () => {
     it('exports a pre-composed helper for objects', () => {
       const schema = {
@@ -395,8 +414,8 @@ describe('compose', () => {
       expect(isErr(validate({ field1: 123 }))).to.be.true;
       expect(isErr(validate({ field1: 'here', field2: [] }))).to.be.true;
       expect(isErr(validate({ field1: 'here', field2: 11 }))).to.be.true;
-      // expect(isErr(validate({ field1: 'here', field4: 'also here' }))).to.be
-      //   .true;
+      expect(isErr(validate({ field1: 'here', field4: 'also here' }))).to.be
+        .true;
       expect(isErr(validate({ field1: 'here', field3: [1, 2, 3] }))).to.be.true;
 
       expect(isOK(validate({ field1: 'here' }))).to.be.true;

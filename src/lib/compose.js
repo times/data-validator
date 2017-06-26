@@ -10,6 +10,7 @@ import {
   validateObjHasKey,
   validateObjPropHasType,
   validateObjPropPasses,
+  validateObjOnlyHasKeys,
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
@@ -25,8 +26,8 @@ type SchemaRules = {
   validator?: Validator,
 };
 
-export type ArraySchema = SchemaRules;
-export type ObjectSchema = { [key: string]: SchemaRules };
+type ArraySchema = SchemaRules;
+type ObjectSchema = { [key: string]: SchemaRules };
 
 type Composer = Array<Validator> => (Data) => Result;
 
@@ -81,6 +82,16 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 };
 
 /**
+ * Convert an object schema to an array of validators and forbid extra fields
+ */
+export const fromObjectSchemaStrict: FromObjectSchema = (schema = {}) => {
+  const vs = fromObjectSchema(schema);
+  return isObject(schema)
+    ? [...vs, validateObjOnlyHasKeys(Object.keys(schema))]
+    : vs;
+};
+
+/**
  * Convert an array schema to an array of validators
  */
 type FromArraySchema = ArraySchema => Array<Validator>;
@@ -105,7 +116,7 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
  */
 type ObjectValidator = ObjectSchema => Validator;
 export const objectValidator: ObjectValidator = schema =>
-  all(fromObjectSchema(schema));
+  all(fromObjectSchemaStrict(schema));
 
 /**
  * Precomposed helper for arrays
