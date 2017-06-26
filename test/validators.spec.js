@@ -5,6 +5,7 @@ import {
   validateObjHasKey,
   validateObjPropHasType,
   validateObjPropPasses,
+  validateObjNoExtraFields,
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
@@ -115,6 +116,47 @@ describe('validators', () => {
     });
   });
 
+  describe('#validateObjNoExtraFields', () => {
+    const schema = {
+      field1: {},
+      field2: {},
+    };
+
+    const validate = validateObjNoExtraFields(schema);
+
+    it('should return an Err when the given data has extra fields', () => {
+      const res1 = validate({
+        field1: 'present',
+        field3: 'should not be here',
+      });
+      expect(isErr(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([`Extra field "field3"`]);
+
+      const res2 = validate({
+        field1: 'present',
+        field2: 'also present',
+        field3: 'should not be here',
+      });
+      expect(isErr(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([`Extra field "field3"`]);
+    });
+
+    it('should return an OK when the given data has no extra fields', () => {
+      const res1 = validate({
+        field1: 'here',
+      });
+      expect(isOK(res1)).to.be.true;
+      expect(res1.errors).to.deep.equal([]);
+
+      const res2 = validate({
+        field1: 'here',
+        field2: 'also here',
+      });
+      expect(isOK(res2)).to.be.true;
+      expect(res2.errors).to.deep.equal([]);
+    });
+  });
+
   describe('#validateIsArray()', () => {
     it('should return an Err when the given data is not an array', () => {
       const res = validateIsArray('string');
@@ -180,49 +222,4 @@ describe('validators', () => {
       expect(isOK(res)).to.be.true;
     });
   });
-
-  //   describe('#validateExtraFields()', () => {
-  //     const schema = {
-  //       field1: {
-  //         required: true,
-  //       },
-  //       field2: {
-  //         required: false,
-  //       },
-  //     };
-
-  //     const validate = validateExtraFields(schema);
-
-  //     it('should return an Err when the given data has extra fields', () => {
-  //       const res1 = validate({
-  //         field1: 'present',
-  //         field3: 'should not be here',
-  //       });
-  //       expect(isErr(res1)).to.be.true;
-  //       expect(res1.errors).to.deep.equal([`Extra field "field3"`]);
-
-  //       const res2 = validate({
-  //         field1: 'present',
-  //         field2: 'also present',
-  //         field3: 'should not be here',
-  //       });
-  //       expect(isErr(res2)).to.be.true;
-  //       expect(res2.errors).to.deep.equal([`Extra field "field3"`]);
-  //     });
-
-  //     it('should return an OK when the given data has no extra fields', () => {
-  //       const res1 = validate({
-  //         field1: 'here',
-  //       });
-  //       expect(isOK(res1)).to.be.true;
-  //       expect(res1.errors).to.deep.equal([]);
-
-  //       const res2 = validate({
-  //         field1: 'here',
-  //         field2: 'also here',
-  //       });
-  //       expect(isOK(res2)).to.be.true;
-  //       expect(res2.errors).to.deep.equal([]);
-  //     });
-  //   });
 });

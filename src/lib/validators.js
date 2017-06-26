@@ -5,6 +5,8 @@ import { isObject, isArray, isType } from './helpers';
 import { ok, err, toResult, mapErrors, flattenResults } from './result';
 import type { Result, Errors } from './result';
 
+import type { ObjectSchema } from './compose';
+
 /**
  * Types
  */
@@ -47,6 +49,17 @@ export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
 };
 
 /**
+ * Does the object have any fields not present in the schema?
+ */
+type ValidateObjNoExtraFields = ObjectSchema => Validator;
+export const validateObjNoExtraFields = schema => obj =>
+  toResult(
+    Object.keys(obj)
+      .filter(k => !schema.hasOwnProperty(k))
+      .map(k => `Extra field "${k}"`)
+  );
+
+/**
  * Is the given data an array?
  */
 type ValidateIsArray = Validator;
@@ -72,12 +85,3 @@ export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
   flattenResults(
     arr.map(v).map((res, i) => mapErrors(e => `At item ${i}: ${e}`)(res))
   );
-
-/**
- * Are there any extra object fields present?
- */
-// module.exports.validateExtraFields = schema => data =>
-//   Object.keys(data)
-//     .filter(k => !schema.hasOwnProperty(k))
-//     .map(k => `Extra field "${k}"`)
-//     .toResult();
