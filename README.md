@@ -37,10 +37,10 @@ const bob = {
 };
 isValid(bob); // { valid: false, errors: [ `Missing required field "name"`, `Field "age" failed to typecheck (expected number)` ] }
 
-const charlie = {
-  name: 'This is too long',
+const christopher = {
+  name: 'Christopher',
 }
-isValid(charlie); // { valid: false, errors: [ `At field "name": "This is too long" was longer than 10` ] }
+isValid(christopher); // { valid: false, errors: [ `At field "name": "Christopher" was longer than 10` ] }
 ```
     
 

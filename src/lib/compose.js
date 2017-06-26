@@ -29,7 +29,7 @@ type SchemaRules = {
 type ArraySchema = SchemaRules;
 type ObjectSchema = { [key: string]: SchemaRules };
 
-type Composer = Array<Validator> => (Data) => Result;
+type Composer = (Array<Validator>) => Data => Result;
 
 /**
  * Run a series of validators (left-to-right) such that all of the

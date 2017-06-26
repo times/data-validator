@@ -17,19 +17,19 @@ export type Validator = Data => Result;
  */
 type ValidateIsObject = Validator;
 export const validateIsObject: ValidateIsObject = data =>
-  (isObject(data) ? ok() : err([`Data was not an object`]));
+  isObject(data) ? ok() : err([`Data was not an object`]);
 
 /**
  * Does the object have the given key?
  */
 type ValidateObjHasKey = string => Validator;
 export const validateObjHasKey: ValidateObjHasKey = key => obj =>
-  (obj.hasOwnProperty(key) ? ok() : err([`Missing required field "${key}"`]));
+  obj.hasOwnProperty(key) ? ok() : err([`Missing required field "${key}"`]);
 
 /**
  * If the given object property exists, does it typecheck?
  */
-type ValidateObjPropHasType = string => (string) => Validator;
+type ValidateObjPropHasType = string => string => Validator;
 export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
   return isType(type)(obj[key])
@@ -40,7 +40,7 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
 /**
  * If the given object property exists, does it pass the given validator?
  */
-type ValidateObjPropPasses = Validator => (string) => Validator;
+type ValidateObjPropPasses = Validator => string => Validator;
 export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
   return mapErrors(e => `At field "${key}": ${e}`)(v(obj[key]));
@@ -49,7 +49,7 @@ export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
 /**
  * Does the object have any fields not present in the schema?
  */
-type ValidateObjOnlyHasKeys = Array<string> => Validator;
+type ValidateObjOnlyHasKeys = (Array<string>) => Validator;
 export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = keys => obj =>
   toResult(
     Object.keys(obj)
@@ -62,7 +62,7 @@ export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = keys => obj =>
  */
 type ValidateIsArray = Validator;
 export const validateIsArray: ValidateIsArray = data =>
-  (isArray(data) ? ok() : err([`Data was not an array`]));
+  isArray(data) ? ok() : err([`Data was not an array`]);
 
 /**
  * Does each array item typecheck?

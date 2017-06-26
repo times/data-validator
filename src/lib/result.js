@@ -32,13 +32,13 @@ export const isErr: IsErr = r => r.valid === false;
 // Convert a (possibly empty) array of errors into a Result
 type ToResult = Errors => Result;
 export const toResult: ToResult = errs =>
-  (errs.length === 0 ? ok() : err(errs));
+  errs.length === 0 ? ok() : err(errs);
 
 // Apply a function to every error in a Result
-type MapErrors = ((string) => string) => (Result) => Result;
+type MapErrors = ((string) => string) => Result => Result;
 export const mapErrors: MapErrors = f => r => toResult(r.errors.map(f));
 
 // Flatten an array of Results into a single Result
-type FlattenResults = Array<Result> => Result;
+type FlattenResults = (Array<Result>) => Result;
 export const flattenResults: FlattenResults = results =>
   results.reduce((acc, r) => toResult([...acc.errors, ...r.errors]), ok());
