@@ -16,7 +16,7 @@ const objectSchema = {
   name: {
     type: 'string',
     required: true,
-    validator: s => s.length <= 20 ? ok() : err([`"${s}" was longer than 10`]),
+    validator: s => s.length <= 10 ? ok() : err([`"${s}" was longer than 10`]),
   },
   age: {
     type: 'number',
@@ -27,7 +27,7 @@ const objectSchema = {
 const isValid = objectValidator(objectSchema);
 
 const alice = {
-  name: 'Alice Smith',
+  name: 'Alice',
   age: 23
 };
 isValid(alice); // { valid: true, errors: [] }
