@@ -11,7 +11,7 @@ import {
   arrayValidator,
 } from '../src/lib/compose';
 
-import { isOK, isErr, ok, err } from '../src/lib/result';
+import { isOK, isErr, ok, err, toResult } from '../src/lib/result';
 
 import {
   validateIsObject,
@@ -591,6 +591,39 @@ describe('compose', () => {
         'Field "field3" failed to typecheck (expected array)',
       ]);
     });
+
+    it('can compose with a brand new validator', () => {
+      const schema = {
+        field1: {
+          required: true,
+          type: 'string',
+        },
+        field2: {
+          type: 'number',
+          validator: x => (x < 10 ? ok() : err([`${x} was >= 10`])),
+        },
+        field3: {
+          type: 'array',
+          validator: validateArrayItemsHaveType('object'),
+        },
+      };
+
+      const arbitraryValidator = data =>
+        data.field1.length > 10
+          ? ok()
+          : err([`Field "field1" was not longer than 10 characters`]);
+
+      const validate = allUntilFailure([
+        objectValidator(schema),
+        arbitraryValidator,
+      ]);
+
+      expect(isErr(validate(''))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field1: 'boo' }))).to.be.true;
+      expect(isOK(validate({ field1: 'string-longer-than-ten-characters' }))).to
+        .be.true;
+    });
   });
 
   describe('#arrayValidator()', () => {
@@ -614,6 +647,37 @@ describe('compose', () => {
 
       expect(isOK(validate([]))).to.be.true;
       expect(isOK(validate([{ field1: 'abc' }]))).to.be.true;
+    });
+
+    it('can compose with a brand new validator', () => {
+      const schema = {
+        type: 'string',
+      };
+
+      const arbitraryValidator = data =>
+        toResult(
+          data
+            .filter(d => d.length < 10)
+            .map(item => `Item "${item}" not longer than 10 characters`)
+        );
+
+      const validate = allUntilFailure([
+        arrayValidator(schema),
+        arbitraryValidator,
+      ]);
+
+      expect(isErr(validate(['boo', 'short']))).to.be.true;
+      expect(
+        isOK(
+          validate(['string-longer-than-ten-characters', 'this-is-long-too'])
+        )
+      ).to.be.true;
+      expect(
+        isErr(validate(['string-longer-than-ten-characters', 'too-short']))
+      ).to.be.true;
+      expect(
+        validate(['string-longer-than-ten-characters', 'too-short']).errors
+      ).to.deep.equal(['Item "too-short" not longer than 10 characters']);
     });
   });
 });
