@@ -549,7 +549,7 @@ describe('compose', () => {
     });
   });
 
-  describe.only('#objectValidator()', () => {
+  describe('#objectValidator()', () => {
     it('exports a pre-composed helper for objects', () => {
       const schema = {
         field1: {
