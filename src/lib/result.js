@@ -42,3 +42,8 @@ export const mapErrors: MapErrors = f => r => toResult(r.errors.map(f));
 type FlattenResults = (Array<Result>) => Result;
 export const flattenResults: FlattenResults = results =>
   results.reduce((acc, r) => toResult([...acc.errors, ...r.errors]), ok());
+
+// Get the errors from a result
+type GetErrors = Result => Errors;
+export const getErrors: GetErrors = (result: Result) =>
+  isErr(result) ? [...result.errors] : [];

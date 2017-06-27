@@ -83,3 +83,15 @@ export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
   flattenResults(
     arr.map(v).map((res, i) => mapErrors(e => `At item ${i}: ${e}`)(res))
   );
+
+/**
+ * Always an error
+ */
+type AlwaysErr = Errors => Validator;
+export const alwaysErr: AlwaysErr = errs => () => err(errs);
+
+/**
+ * Always an ok
+ */
+type AlwaysOK = () => Validator;
+export const alwaysOk: AlwaysOK = () => () => ok();

@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.arrayValidator = exports.objectValidator = exports.fromArraySchema = exports.fromObjectSchema = exports.some = exports.all = undefined;
+exports.arrayValidator = exports.objectValidator = exports.fromArraySchema = exports.fromObjectSchemaStrict = exports.fromObjectSchema = exports.some = exports.all = undefined;
 
 var _result = require('./result');
 
@@ -44,6 +44,12 @@ var some = exports.some = function some(validators) {
   };
 };
 
+// Helper
+
+var flatten = function flatten(acc, vs) {
+  return [].concat(_toConsumableArray(acc), _toConsumableArray(vs));
+};
+
 /**
  * Convert an object schema to an array of validators
  */
@@ -54,16 +60,29 @@ var fromObjectSchema = exports.fromObjectSchema = function fromObjectSchema() {
 
   if (!(0, _helpers.isObject)(schema)) return defaultVs;
 
-  return Object.keys(schema).reduce(function (vs, k) {
+  return Object.keys(schema).map(function (k) {
     var rules = schema[k];
 
-    var extraVs = [];
-    if (rules.required === true) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateObjHasKey)(k)]);
-    if (rules.type) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateObjPropHasType)(rules.type)(k)]);
-    if (rules.validator) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateObjPropPasses)(rules.validator)(k)]);
+    return Object.keys(rules).map(function (r) {
+      if (r === 'required' && rules[r]) {
+        return rules[r] === true ? [(0, _validators.validateObjHasKey)(k)] : [];
+      } else if (r === 'type' && rules[r]) {
+        return [(0, _validators.validateObjPropHasType)(rules[r])(k)];
+      } else if (r === 'validator' && rules[r]) {
+        return [(0, _validators.validateObjPropPasses)(rules[r])(k)];
+      } else return [];
+    }).reduce(flatten, []);
+  }).reduce(flatten, defaultVs);
+};
 
-    return [].concat(_toConsumableArray(vs), _toConsumableArray(extraVs));
-  }, defaultVs);
+/**
+ * Convert an object schema to an array of validators and forbid extra fields
+ */
+var fromObjectSchemaStrict = exports.fromObjectSchemaStrict = function fromObjectSchemaStrict() {
+  var schema = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+  var vs = fromObjectSchema(schema);
+  return (0, _helpers.isObject)(schema) ? [].concat(_toConsumableArray(vs), [(0, _validators.validateObjOnlyHasKeys)(Object.keys(schema))]) : vs;
 };
 
 /**
@@ -76,18 +95,20 @@ var fromArraySchema = exports.fromArraySchema = function fromArraySchema() {
 
   if (!(0, _helpers.isObject)(schema)) return defaultVs;
 
-  var extraVs = [];
-  if (schema.type) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateArrayItemsHaveType)(schema.type)]);
-  if (schema.validator) extraVs = [].concat(_toConsumableArray(extraVs), [(0, _validators.validateArrayItemsPass)(schema.validator)]);
-
-  return [].concat(defaultVs, _toConsumableArray(extraVs));
+  return Object.keys(schema).map(function (k) {
+    if (k === 'type' && schema[k]) {
+      return [(0, _validators.validateArrayItemsHaveType)(schema[k])];
+    } else if (k === 'validator' && schema[k]) {
+      return [(0, _validators.validateArrayItemsPass)(schema[k])];
+    } else return [];
+  }).reduce(flatten, defaultVs);
 };
 
 /**
  * Precomposed helper for objects
  */
 var objectValidator = exports.objectValidator = function objectValidator(schema) {
-  return all(fromObjectSchema(schema));
+  return all(fromObjectSchemaStrict(schema));
 };
 
 /**

@@ -7,6 +7,7 @@ import {
   toResult,
   mapErrors,
   flattenResults,
+  getErrors,
 } from '../src/lib/result';
 
 describe('result', () => {
@@ -99,6 +100,17 @@ describe('result', () => {
       const res = flattenResults([err(['a']), ok(), err(['c'])]);
       expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal(['a', 'c']);
+    });
+  });
+
+  describe('#getErrors()', () => {
+    it('should return the errors of an Err', () => {
+      const errors = getErrors(toResult(['a']));
+      expect(errors).to.deep.equal(['a']);
+    });
+    it('should return an empty array for an OK', () => {
+      const errors = getErrors(toResult([]));
+      expect(errors).to.deep.equal([]);
     });
   });
 });

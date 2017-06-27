@@ -2,6 +2,7 @@ import { expect } from 'chai';
 
 import {
   all,
+  allUntilFailure,
   some,
   fromObjectSchema,
   fromObjectSchemaStrict,
@@ -15,6 +16,7 @@ import { isOK, isErr, ok, err } from '../src/lib/result';
 import {
   validateIsObject,
   validateObjHasKey,
+  validateObjPropHasType,
   validateIsArray,
   validateArrayItemsHaveType,
 } from '../src/lib/validators';
@@ -51,6 +53,7 @@ describe('compose', () => {
 
       expect(validate('not an object').errors).to.deep.equal([
         `Data was not an object`,
+        `Missing required field \"field1\"`,
       ]);
 
       expect(validate({}).errors).to.deep.equal([
@@ -64,11 +67,78 @@ describe('compose', () => {
 
     it('can compose with a brand new validator', () => {
       const arbitraryValidator = data =>
-        (data.hasOwnProperty('arbitraryField')
+        data.hasOwnProperty('arbitraryField')
           ? ok()
-          : err([`Couldn't find arbitraryField`]));
+          : err([`Couldn't find arbitraryField`]);
 
       const validate = all([validateIsObject, arbitraryValidator]);
+
+      expect(isErr(validate(''))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isOK(validate({ arbitraryField: 'boo' }))).to.be.true;
+    });
+  });
+
+  describe('#allUntilFailure()', () => {
+    it('should compose multiple validators into a single validator such that they all must succeed', () => {
+      const validate = allUntilFailure([
+        validateIsObject,
+        validateObjHasKey('field1'),
+      ]);
+
+      expect(isErr(validate('not an object'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field2: 'here' }))).to.be.true;
+
+      expect(isOK(validate({ field1: 'here' }))).to.be.true;
+    });
+
+    it('can compose multiple times', () => {
+      const v1 = allUntilFailure([validateIsObject]);
+      const v2 = allUntilFailure([v1, validateObjHasKey('field1')]);
+      const validate = allUntilFailure([v2, validateObjHasKey('field2')]);
+
+      expect(isErr(validate('not an object'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field2: 'here' }))).to.be.true;
+      expect(isErr(validate({ field1: 'here', field3: 'also here' }))).to.be
+        .true;
+
+      expect(isOK(validate({ field1: 'here', field2: 'also here' }))).to.be
+        .true;
+    });
+
+    it('runs the composed validators in order, stopping when a failure occurs, and returns the first error', () => {
+      const validate = allUntilFailure([
+        validateIsObject,
+        validateObjHasKey('field1'),
+        validateObjPropHasType('string')('field1'),
+      ]);
+
+      expect(validate('not an object').errors).to.deep.equal([
+        `Data was not an object`,
+      ]);
+
+      expect(validate({}).errors).to.deep.equal([
+        `Missing required field "field1"`,
+      ]);
+
+      expect(validate({ field1: {} }).errors).to.deep.equal([
+        `Field \"field1\" failed to typecheck (expected string)`,
+      ]);
+
+      expect(validate({ field2: 'here' }).errors).to.deep.equal([
+        `Missing required field "field1"`,
+      ]);
+    });
+
+    it('can compose with a brand new validator', () => {
+      const arbitraryValidator = data =>
+        data.hasOwnProperty('arbitraryField')
+          ? ok()
+          : err([`Couldn't find arbitraryField`]);
+
+      const validate = allUntilFailure([validateIsObject, arbitraryValidator]);
 
       expect(isErr(validate(''))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
@@ -96,7 +166,7 @@ describe('compose', () => {
     });
 
     it('works as part of a schema', () => {
-      const validateObjectSchema = all(
+      const validateObjectSchema = allUntilFailure(
         fromObjectSchema({
           field2: {
             required: true,
@@ -106,16 +176,16 @@ describe('compose', () => {
       );
 
       const validateLteThree = n =>
-        (n <= 3 ? ok() : err([`${n} was greater than 3`]));
+        n <= 3 ? ok() : err([`${n} was greater than 3`]);
 
-      const validateArraySchema = all(
+      const validateArraySchema = allUntilFailure(
         fromArraySchema({
           type: 'number',
           validator: validateLteThree,
         })
       );
 
-      const validate = all(
+      const validate = allUntilFailure(
         fromObjectSchema({
           field1: {
             validator: some([validateObjectSchema, validateArraySchema]),
@@ -152,7 +222,7 @@ describe('compose', () => {
   describe('#fromObjectSchema()', () => {
     it('should handle cases where no schema is passed', () => {
       const vs = fromObjectSchema();
-      expect(vs.length).to.equal(1);
+      expect(vs.length).to.equal(4);
 
       const validate = all(vs);
       expect(isErr(validate('string'))).to.be.true;
@@ -165,7 +235,78 @@ describe('compose', () => {
 
       const validate = all(vs);
       expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate({}))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+
+      expect(validate([]).errors).to.deep.equal([
+        'Schema error: Schemas must be objects',
+      ]);
+    });
+
+    it('should handle cases where a schema key is not an object', () => {
+      const vs = fromObjectSchema({
+        field1: 'test-1234',
+        field2: {
+          required: true,
+        },
+        field3: 'something',
+      });
+
+      expect(vs.length).to.equal(1);
+
+      const validate = allUntilFailure(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+    });
+
+    it('should handle cases where a schema field passes an invalid required property', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          required: 'yes',
+        },
+      });
+
+      expect(vs.length).to.equal(1);
+
+      const validate = allUntilFailure(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(validate({}).errors).to.deep.equal([
+        `Schema error: Field "required" failed to typecheck (expected boolean)`,
+      ]);
+    });
+
+    it('should handle cases where a schema field passes an invalid type property', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          type: 123,
+        },
+      });
+
+      expect(vs.length).to.equal(1);
+
+      const validate = allUntilFailure(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(validate({}).errors).to.deep.equal([
+        `Schema error: Field "type" failed to typecheck (expected string)`,
+      ]);
+    });
+
+    it('should handle cases where a schema field passes an invalid validator property', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          validator: { not: 'a', function: true },
+        },
+      });
+
+      expect(vs.length).to.equal(1);
+
+      const validate = allUntilFailure(vs);
+      expect(isErr(validate('string'))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
+      expect(validate({}).errors).to.deep.equal([
+        `Schema error: Field "validator" failed to typecheck (expected function)`,
+      ]);
     });
 
     it('should add validators to check the existence of required fields', () => {
@@ -174,20 +315,12 @@ describe('compose', () => {
           required: true,
         },
       });
-      expect(vs1.length).to.equal(2);
+      expect(vs1.length).to.equal(4);
 
       const validate1 = all(vs1);
       expect(isErr(validate1({}))).to.be.true;
       expect(isErr(validate1({ field2: 'here' }))).to.be.true;
       expect(isOK(validate1({ field1: 'here' }))).to.be.true;
-
-      // Don't add the rule when `required` is not `true`
-      const vs2 = fromObjectSchema({
-        field1: {
-          required: 123,
-        },
-      });
-      expect(vs2.length).to.equal(1);
     });
 
     it('should add validators to check the types of fields', () => {
@@ -196,7 +329,7 @@ describe('compose', () => {
           type: 'string',
         },
       });
-      expect(vs.length).to.equal(2);
+      expect(vs.length).to.equal(4);
 
       const validate = all(vs);
       expect(isErr(validate({ field1: 123 }))).to.be.true;
@@ -217,7 +350,7 @@ describe('compose', () => {
           type: 'array',
         },
       });
-      expect(vs.length).to.equal(5);
+      expect(vs.length).to.equal(4);
 
       const validate = all(vs);
       expect(isErr(validate({}))).to.be.true;
@@ -237,7 +370,7 @@ describe('compose', () => {
           validator: validateIsObject,
         },
       });
-      expect(vs.length).to.equal(2);
+      expect(vs.length).to.equal(4);
 
       const validate = all(vs);
       expect(isErr(validate({ field1: 'not an object' }))).to.be.true;
@@ -274,15 +407,14 @@ describe('compose', () => {
           otherRule: true,
         },
       });
-      const validate = all(vs);
-      expect(vs.length).to.equal(1);
+      expect(vs.length).to.equal(4);
     });
   });
 
   describe('#fromObjectSchemaStrict()', () => {
     it('should handle cases where no schema is passed', () => {
       const vs = fromObjectSchemaStrict();
-      expect(vs.length).to.equal(2);
+      expect(vs.length).to.equal(5);
 
       const validate = all(vs);
       expect(isErr(validate('string'))).to.be.true;
@@ -295,12 +427,12 @@ describe('compose', () => {
 
       const validate = all(vs);
       expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate({}))).to.be.true;
+      expect(isErr(validate({}))).to.be.true;
     });
 
     it('should add a check to forbid extra fields', () => {
       const vs1 = fromObjectSchemaStrict({});
-      expect(vs1.length).to.equal(2);
+      expect(vs1.length).to.equal(5);
 
       const vs2 = fromObjectSchemaStrict({
         field1: {},
@@ -329,7 +461,39 @@ describe('compose', () => {
 
       const validate = all(vs);
       expect(isErr(validate('string'))).to.be.true;
-      expect(isOK(validate([]))).to.be.true;
+      expect(isErr(validate([]))).to.be.true;
+
+      expect(validate([]).errors).to.deep.equal([
+        'Schema error: Schemas must be objects',
+      ]);
+    });
+
+    it('should handle cases where a schema field passes an invalid type property', () => {
+      const vs = fromArraySchema({
+        type: 12345,
+      });
+      expect(vs.length).to.equal(1);
+
+      const validate = allUntilFailure(vs);
+      expect(isErr(validate([]))).to.be.true;
+
+      expect(validate([]).errors).to.deep.equal([
+        'Schema error: Field "type" failed to typecheck (expected string)',
+      ]);
+    });
+
+    it('should handle cases where a schema field passes an invalid validator property', () => {
+      const vs = fromArraySchema({
+        validator: { not: 'a', function: true },
+      });
+      expect(vs.length).to.equal(1);
+
+      const validate = allUntilFailure(vs);
+      expect(isErr(validate([]))).to.be.true;
+
+      expect(validate([]).errors).to.deep.equal([
+        'Schema error: Field "validator" failed to typecheck (expected function)',
+      ]);
     });
 
     it('should add validators to check the types of fields', () => {
@@ -424,7 +588,7 @@ describe('compose', () => {
   describe('#arrayValidator()', () => {
     it('exports a pre-composed helper for arrays', () => {
       const hasFewerThan3Keys = o =>
-        (Object.keys(o).length < 3 ? ok() : err([`Object has too many keys`]));
+        Object.keys(o).length < 3 ? ok() : err([`Object has too many keys`]);
 
       const schema = {
         type: 'object',

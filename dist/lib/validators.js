@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
+exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
 
 var _helpers = require('./helpers');
 
@@ -57,6 +57,19 @@ var validateObjPropPasses = exports.validateObjPropPasses = function validateObj
 };
 
 /**
+ * Does the object have any fields not present in the schema?
+ */
+var validateObjOnlyHasKeys = exports.validateObjOnlyHasKeys = function validateObjOnlyHasKeys(keys) {
+  return function (obj) {
+    return (0, _result.toResult)(Object.keys(obj).filter(function (k) {
+      return !keys.includes(k);
+    }).map(function (k) {
+      return 'Extra field "' + k + '"';
+    }));
+  };
+};
+
+/**
  * Is the given data an array?
  */
 var validateIsArray = exports.validateIsArray = function validateIsArray(data) {
@@ -88,12 +101,3 @@ var validateArrayItemsPass = exports.validateArrayItemsPass = function validateA
     }));
   };
 };
-
-/**
- * Are there any extra object fields present?
- */
-// module.exports.validateExtraFields = schema => data =>
-//   Object.keys(data)
-//     .filter(k => !schema.hasOwnProperty(k))
-//     .map(k => `Extra field "${k}"`)
-//     .toResult();

@@ -1,9 +1,23 @@
 // @flow
 
-import { isOK, ok, isErr, err } from './result';
+import {
+  isOK,
+  ok,
+  isErr,
+  err,
+  flattenResults,
+  mapErrors,
+  getErrors,
+} from './result';
 import type { Result } from './result';
 
 import { isObject } from './helpers';
+
+import {
+  validateAsObjectSchema,
+  validateAsArraySchema,
+  processSchemaError,
+} from './internal';
 
 import {
   validateIsObject,
@@ -14,20 +28,22 @@ import {
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
+  alwaysErr,
+  alwaysOk,
 } from './validators';
 import type { Validator, Data } from './validators';
 
 /**
  * Types
  */
-type SchemaRules = {
+export type SchemaRules = {
   required?: boolean,
   type?: string,
   validator?: Validator,
 };
 
 type ArraySchema = SchemaRules;
-type ObjectSchema = { [key: string]: SchemaRules };
+export type ObjectSchema = { [key: string]: SchemaRules };
 
 type Composer = (Array<Validator>) => Data => Result;
 
@@ -35,8 +51,15 @@ type Composer = (Array<Validator>) => Data => Result;
  * Run a series of validators (left-to-right) such that all of the
  * validators must succeed. Otherwise, returns the first set of errors
  */
-export const all: Composer = validators => data =>
+export const allUntilFailure: Composer = validators => data =>
   validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
+
+/**
+ * Run a series of validators (left-to-right) such that all of the
+ * validators must succeed. Otherwise, return all of the errors
+ */
+export const all: Composer = validators => data =>
+  flattenResults(validators.map(v => v(data)));
 
 /**
  * Run a series of validators such that at least one of the validators must
@@ -51,34 +74,39 @@ export const some: Composer = validators => data =>
 
 // Helper
 type Flatten = (Array<Validator>, Array<Validator>) => Array<Validator>;
-const flatten: Flatten = (acc, vs) => [...acc, ...vs];
+export const flatten: Flatten = (acc, vs) => [...acc, ...vs];
 
 /**
  * Convert an object schema to an array of validators
  */
 type FromObjectSchema = ObjectSchema => Array<Validator>;
 export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
-  const defaultVs = [validateIsObject];
+  if (!isObject(schema))
+    return processSchemaError(err(['Schemas must be objects']));
 
-  if (!isObject(schema)) return defaultVs;
+  const schemaResult = validateAsObjectSchema(schema);
+  if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
-  return Object.keys(schema)
-    .map(k => {
-      const rules = schema[k];
+  const requiredChecks = Object.keys(schema).map(
+    k => (schema[k].required ? validateObjHasKey(k) : alwaysOk())
+  );
+  const typeChecks = Object.keys(schema).map(
+    k =>
+      schema[k].type ? validateObjPropHasType(schema[k].type)(k) : alwaysOk()
+  );
+  const validatorChecks = Object.keys(schema).map(
+    k =>
+      schema[k].validator
+        ? validateObjPropPasses(schema[k].validator)(k)
+        : alwaysOk()
+  );
 
-      return Object.keys(rules)
-        .map(r => {
-          if (r === 'required' && rules[r]) {
-            return rules[r] === true ? [validateObjHasKey(k)] : [];
-          } else if (r === 'type' && rules[r]) {
-            return [validateObjPropHasType(rules[r])(k)];
-          } else if (r === 'validator' && rules[r]) {
-            return [validateObjPropPasses(rules[r])(k)];
-          } else return [];
-        })
-        .reduce(flatten, []);
-    })
-    .reduce(flatten, defaultVs);
+  return [
+    validateIsObject,
+    all(requiredChecks),
+    all(typeChecks),
+    all(validatorChecks),
+  ];
 };
 
 /**
@@ -96,9 +124,11 @@ export const fromObjectSchemaStrict: FromObjectSchema = (schema = {}) => {
  */
 type FromArraySchema = ArraySchema => Array<Validator>;
 export const fromArraySchema: FromArraySchema = (schema = {}) => {
-  const defaultVs = [validateIsArray];
+  if (!isObject(schema))
+    return processSchemaError(err(['Schemas must be objects']));
 
-  if (!isObject(schema)) return defaultVs;
+  const schemaResult = validateAsArraySchema(schema);
+  if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
   return Object.keys(schema)
     .map(k => {
@@ -108,7 +138,7 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
         return [validateArrayItemsPass(schema[k])];
       } else return [];
     })
-    .reduce(flatten, defaultVs);
+    .reduce(flatten, [validateIsArray]);
 };
 
 /**
@@ -116,11 +146,11 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
  */
 type ObjectValidator = ObjectSchema => Validator;
 export const objectValidator: ObjectValidator = schema =>
-  all(fromObjectSchemaStrict(schema));
+  allUntilFailure(fromObjectSchemaStrict(schema));
 
 /**
  * Precomposed helper for arrays
  */
 type ArrayValidator = ArraySchema => Validator;
 export const arrayValidator: ArrayValidator = schema =>
-  all(fromArraySchema(schema));
+  allUntilFailure(fromArraySchema(schema));
