@@ -549,7 +549,7 @@ describe('compose', () => {
     });
   });
 
-  describe('#objectValidator()', () => {
+  describe.only('#objectValidator()', () => {
     it('exports a pre-composed helper for objects', () => {
       const schema = {
         field1: {
@@ -582,6 +582,14 @@ describe('compose', () => {
       expect(isOK(validate({ field1: 'here', field2: 6 }))).to.be.true;
       expect(isOK(validate({ field1: 'here', field2: 6, field3: [{ a: 1 }] })))
         .to.be.true;
+
+      expect(
+        validate({ field1: 123, field2: 'hello', field3: 1234 }).errors
+      ).to.deep.equal([
+        'Field "field1" failed to typecheck (expected string)',
+        'Field "field2" failed to typecheck (expected number)',
+        'Field "field3" failed to typecheck (expected array)',
+      ]);
     });
   });
 
