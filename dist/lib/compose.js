@@ -3,11 +3,13 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.arrayValidator = exports.objectValidator = exports.fromArraySchema = exports.fromObjectSchemaStrict = exports.fromObjectSchema = exports.some = exports.all = undefined;
+exports.arrayValidator = exports.objectValidator = exports.fromArraySchema = exports.fromObjectSchemaStrict = exports.fromObjectSchema = exports.flatten = exports.some = exports.all = exports.allUntilFailure = undefined;
 
 var _result = require('./result');
 
 var _helpers = require('./helpers');
+
+var _internal = require('./internal');
 
 var _validators = require('./validators');
 
@@ -22,11 +24,23 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 /**
  * Types
  */
-var all = exports.all = function all(validators) {
+var allUntilFailure = exports.allUntilFailure = function allUntilFailure(validators) {
   return function (data) {
     return validators.reduce(function (res, v) {
       return (0, _result.isOK)(res) ? v(data) : res;
     }, (0, _result.ok)());
+  };
+};
+
+/**
+ * Run a series of validators (left-to-right) such that all of the
+ * validators must succeed. Otherwise, return all of the errors
+ */
+var all = exports.all = function all(validators) {
+  return function (data) {
+    return (0, _result.flattenResults)(validators.map(function (v) {
+      return v(data);
+    }));
   };
 };
 
@@ -45,8 +59,7 @@ var some = exports.some = function some(validators) {
 };
 
 // Helper
-
-var flatten = function flatten(acc, vs) {
+var flatten = exports.flatten = function flatten(acc, vs) {
   return [].concat(_toConsumableArray(acc), _toConsumableArray(vs));
 };
 
@@ -56,23 +69,22 @@ var flatten = function flatten(acc, vs) {
 var fromObjectSchema = exports.fromObjectSchema = function fromObjectSchema() {
   var schema = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-  var defaultVs = [_validators.validateIsObject];
+  if (!(0, _helpers.isObject)(schema)) return (0, _internal.processSchemaError)((0, _result.err)(['Schemas must be objects']));
 
-  if (!(0, _helpers.isObject)(schema)) return defaultVs;
+  var schemaResult = (0, _internal.validateAsObjectSchema)(schema);
+  if ((0, _result.isErr)(schemaResult)) return (0, _internal.processSchemaError)(schemaResult);
 
-  return Object.keys(schema).map(function (k) {
-    var rules = schema[k];
+  var requiredChecks = Object.keys(schema).map(function (k) {
+    return schema[k].required ? (0, _validators.validateObjHasKey)(k) : (0, _validators.alwaysOk)();
+  });
+  var typeChecks = Object.keys(schema).map(function (k) {
+    return schema[k].type ? (0, _validators.validateObjPropHasType)(schema[k].type)(k) : (0, _validators.alwaysOk)();
+  });
+  var validatorChecks = Object.keys(schema).map(function (k) {
+    return schema[k].validator ? (0, _validators.validateObjPropPasses)(schema[k].validator)(k) : (0, _validators.alwaysOk)();
+  });
 
-    return Object.keys(rules).map(function (r) {
-      if (r === 'required' && rules[r]) {
-        return rules[r] === true ? [(0, _validators.validateObjHasKey)(k)] : [];
-      } else if (r === 'type' && rules[r]) {
-        return [(0, _validators.validateObjPropHasType)(rules[r])(k)];
-      } else if (r === 'validator' && rules[r]) {
-        return [(0, _validators.validateObjPropPasses)(rules[r])(k)];
-      } else return [];
-    }).reduce(flatten, []);
-  }).reduce(flatten, defaultVs);
+  return [_validators.validateIsObject, all(requiredChecks), all(typeChecks), all(validatorChecks)];
 };
 
 /**
@@ -91,9 +103,10 @@ var fromObjectSchemaStrict = exports.fromObjectSchemaStrict = function fromObjec
 var fromArraySchema = exports.fromArraySchema = function fromArraySchema() {
   var schema = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-  var defaultVs = [_validators.validateIsArray];
+  if (!(0, _helpers.isObject)(schema)) return (0, _internal.processSchemaError)((0, _result.err)(['Schemas must be objects']));
 
-  if (!(0, _helpers.isObject)(schema)) return defaultVs;
+  var schemaResult = (0, _internal.validateAsArraySchema)(schema);
+  if ((0, _result.isErr)(schemaResult)) return (0, _internal.processSchemaError)(schemaResult);
 
   return Object.keys(schema).map(function (k) {
     if (k === 'type' && schema[k]) {
@@ -101,19 +114,19 @@ var fromArraySchema = exports.fromArraySchema = function fromArraySchema() {
     } else if (k === 'validator' && schema[k]) {
       return [(0, _validators.validateArrayItemsPass)(schema[k])];
     } else return [];
-  }).reduce(flatten, defaultVs);
+  }).reduce(flatten, [_validators.validateIsArray]);
 };
 
 /**
  * Precomposed helper for objects
  */
 var objectValidator = exports.objectValidator = function objectValidator(schema) {
-  return all(fromObjectSchemaStrict(schema));
+  return allUntilFailure(fromObjectSchemaStrict(schema));
 };
 
 /**
  * Precomposed helper for arrays
  */
 var arrayValidator = exports.arrayValidator = function arrayValidator(schema) {
-  return all(fromArraySchema(schema));
+  return allUntilFailure(fromArraySchema(schema));
 };

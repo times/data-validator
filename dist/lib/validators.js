@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
+exports.alwaysOk = exports.alwaysErr = exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
 
 var _helpers = require('./helpers');
 
@@ -99,5 +99,23 @@ var validateArrayItemsPass = exports.validateArrayItemsPass = function validateA
         return 'At item ' + i + ': ' + e;
       })(res);
     }));
+  };
+};
+
+/**
+ * Always an error
+ */
+var alwaysErr = exports.alwaysErr = function alwaysErr(errs) {
+  return function () {
+    return (0, _result.err)(errs);
+  };
+};
+
+/**
+ * Always an ok
+ */
+var alwaysOk = exports.alwaysOk = function alwaysOk() {
+  return function () {
+    return (0, _result.ok)();
   };
 };
