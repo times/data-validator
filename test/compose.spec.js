@@ -256,6 +256,11 @@ describe('compose', () => {
       const validate = allUntilFailure(vs);
       expect(isErr(validate('string'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
+      expect(isErr(validate({ field2: 1234 }))).to.be.true;
+
+      expect(validate({ field2: 1234 }).errors).to.deep.equal([
+        'Schema error: Data was not an object',
+      ]);
     });
 
     it('should handle cases where a schema field passes an invalid required property', () => {
@@ -309,7 +314,7 @@ describe('compose', () => {
       ]);
     });
 
-    it('should add validators to check the existence of required fields', () => {
+    it('should check the existence of required fields', () => {
       const vs1 = fromObjectSchema({
         field1: {
           required: true,
@@ -323,7 +328,7 @@ describe('compose', () => {
       expect(isOK(validate1({ field1: 'here' }))).to.be.true;
     });
 
-    it('should add validators to check the types of fields', () => {
+    it('should check the types of fields', () => {
       const vs = fromObjectSchema({
         field1: {
           type: 'string',
@@ -337,7 +342,7 @@ describe('compose', () => {
       expect(isOK(validate({ field1: 'here' }))).to.be.true;
     });
 
-    it('should add validators for both field existence and field types', () => {
+    it('should check both field existence and field types', () => {
       const vs = fromObjectSchema({
         field1: {
           required: true,
@@ -408,6 +413,17 @@ describe('compose', () => {
         },
       });
       expect(vs.length).to.equal(4);
+    });
+
+    it('should allow non-specified fields to exist', () => {
+      const vs = fromObjectSchema({
+        field1: {
+          otherRule: true,
+        },
+      });
+
+      const validate = all(vs);
+      expect(isOK(validate({ test: 1234 }))).to.be.true;
     });
   });
 
