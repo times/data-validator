@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", {
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var isISOString = exports.isISOString = function isISOString(str) {
   return typeof str === 'string' && str.match(/^\d{4}(-\d\d(-\d\d(T\d\d:\d\d(:\d\d)?(\.\d+)?(([+-]\d\d:\d\d)|Z)?)?)?)?$/i) !== null;
 };
@@ -54,4 +56,11 @@ var isType = exports.isType = function isType(type) {
         return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === type;
     }
   };
+};
+
+/**
+ * Flattens two arrays
+ */
+var flatten = exports.flatten = function flatten(acc, vs) {
+  return [].concat(_toConsumableArray(acc), _toConsumableArray(vs));
 };

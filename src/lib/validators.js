@@ -89,9 +89,3 @@ export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
  */
 type AlwaysErr = Errors => Validator;
 export const alwaysErr: AlwaysErr = errs => () => err(errs);
-
-/**
- * Always an ok
- */
-type AlwaysOK = () => Validator;
-export const alwaysOk: AlwaysOK = () => () => ok();
