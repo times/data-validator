@@ -3,9 +3,9 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.alwaysErr = exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
+exports.alwaysOK = exports.alwaysErr = exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
 
-var _helpers = require('./helpers');
+var _typecheck = require('./typecheck');
 
 var _result = require('./result');
 
@@ -18,7 +18,7 @@ var _result = require('./result');
  * Is the given data an object?
  */
 var validateIsObject = exports.validateIsObject = function validateIsObject(data) {
-  return (0, _helpers.isObject)(data) ? (0, _result.ok)() : (0, _result.err)(['Data was not an object']);
+  return (0, _typecheck.isObject)(data) ? (0, _result.ok)() : (0, _result.err)(['Data was not an object']);
 };
 
 /**
@@ -37,7 +37,7 @@ var validateObjPropHasType = exports.validateObjPropHasType = function validateO
   return function (key) {
     return function (obj) {
       if (!obj.hasOwnProperty(key)) return (0, _result.ok)();
-      return (0, _helpers.isType)(type)(obj[key]) ? (0, _result.ok)() : (0, _result.err)(['Field "' + key + '" failed to typecheck (expected ' + type + ')']);
+      return (0, _typecheck.isType)(type)(obj[key]) ? (0, _result.ok)() : (0, _result.err)(['Field "' + key + '" failed to typecheck (expected ' + type + ')']);
     };
   };
 };
@@ -73,7 +73,7 @@ var validateObjOnlyHasKeys = exports.validateObjOnlyHasKeys = function validateO
  * Is the given data an array?
  */
 var validateIsArray = exports.validateIsArray = function validateIsArray(data) {
-  return (0, _helpers.isArray)(data) ? (0, _result.ok)() : (0, _result.err)(['Data was not an array']);
+  return (0, _typecheck.isArray)(data) ? (0, _result.ok)() : (0, _result.err)(['Data was not an array']);
 };
 
 /**
@@ -82,7 +82,7 @@ var validateIsArray = exports.validateIsArray = function validateIsArray(data) {
 var validateArrayItemsHaveType = exports.validateArrayItemsHaveType = function validateArrayItemsHaveType(type) {
   return function (arr) {
     return (0, _result.toResult)(arr.filter(function (a) {
-      return !(0, _helpers.isType)(type)(a);
+      return !(0, _typecheck.isType)(type)(a);
     }).map(function (a) {
       return 'Item "' + a + '" failed to typecheck (expected ' + type + ')';
     }));
@@ -108,5 +108,14 @@ var validateArrayItemsPass = exports.validateArrayItemsPass = function validateA
 var alwaysErr = exports.alwaysErr = function alwaysErr(errs) {
   return function () {
     return (0, _result.err)(errs);
+  };
+};
+
+/**
+ * Always OK
+ */
+var alwaysOK = exports.alwaysOK = function alwaysOK() {
+  return function () {
+    return (0, _result.ok)();
   };
 };

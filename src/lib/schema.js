@@ -1,4 +1,7 @@
+// @flow
+
 import {
+  type Validator,
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
@@ -7,13 +10,13 @@ import {
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
+  alwaysOK,
   alwaysErr,
 } from './validators';
 
 import { all, allWhileOK } from './compose';
-import { isErr, err, mapErrors, getErrors } from './result';
+import { type Result, isErr, err, mapErrors, getErrors } from './result';
 import { isObject } from './typecheck';
-import { flatten } from './helpers';
 
 /**
  * Types
@@ -25,16 +28,23 @@ type SchemaRules = {
 };
 
 type ArraySchema = SchemaRules;
-type ObjectSchema = { [key: string]: SchemaRules };
+type ObjectSchema = { +[key: string]: SchemaRules };
 
 /**
- * 
+ * Convert a schema rule to a validator
  */
-type ConvertToValidator = string => Validator;
-const convertToValidator: ConvertToValidator = key => {
-  if (key === 'required') return validateObjPropHasType('boolean')('required');
-  if (key === 'type') return validateObjPropHasType('string')('type');
-  return validateObjPropHasType('function')('validator');
+type ConvertSchemaRuleToValidator = string => Validator;
+const convertSchemaRuleToValidator: ConvertSchemaRuleToValidator = key => {
+  switch (key) {
+    case 'required':
+      return validateObjPropHasType('boolean')('required');
+    case 'type':
+      return validateObjPropHasType('string')('type');
+    case 'validator':
+      return validateObjPropHasType('function')('validator');
+    default:
+      return alwaysOK();
+  }
 };
 
 /**
@@ -42,10 +52,7 @@ const convertToValidator: ConvertToValidator = key => {
  */
 type ValidateAsSchemaRules = SchemaRules => Result;
 const validateAsSchemaRules: ValidateAsSchemaRules = rules => {
-  const ruleValidators = Object.keys(rules)
-    .filter(k => ['required', 'type', 'validator'].includes(k))
-    .map(convertToValidator);
-
+  const ruleValidators = Object.keys(rules).map(convertSchemaRuleToValidator);
   return allWhileOK([validateIsObject, ...ruleValidators])(rules);
 };
 
@@ -59,8 +66,8 @@ const validateAsNestedSchemaRules: ValidateAsNestedSchemaRules = field => schema
 /**
  * Enforces a failed validation if the schema is invalid
  */
-type ProcessSchemaError = SchemaResult => Array<Validator>;
-export const processSchemaError: ProcessSchemaError = schemaResult => [
+type ProcessSchemaError = Result => Array<Validator>;
+const processSchemaError: ProcessSchemaError = schemaResult => [
   alwaysErr(getErrors(mapErrors(err => `Schema error: ${err}`)(schemaResult))),
 ];
 
@@ -97,12 +104,18 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
     .map(validateObjHasKey);
 
   const typeChecks = Object.keys(schema)
-    .filter(k => schema[k].type)
-    .map(k => validateObjPropHasType(schema[k].type)(k));
+    .map(k => {
+      const type = schema[k].type;
+      return type ? validateObjPropHasType(type)(k) : null;
+    })
+    .filter(Boolean);
 
   const validatorChecks = Object.keys(schema)
-    .filter(k => schema[k].validator)
-    .map(k => validateObjPropPasses(schema[k].validator)(k));
+    .map(k => {
+      const validator = schema[k].validator;
+      return validator ? validateObjPropPasses(validator)(k) : null;
+    })
+    .filter(Boolean);
 
   return [
     validateIsObject,
@@ -133,15 +146,17 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
   const schemaResult = validateAsArraySchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
-  const vs = Object.keys(schema).map(k => {
-    if (k === 'type' && schema[k]) {
-      return [validateArrayItemsHaveType(schema[k])];
-    } else if (k === 'validator' && schema[k]) {
-      return [validateArrayItemsPass(schema[k])];
-    } else return [];
-  });
+  const vs = Object.keys(schema)
+    .map(k => {
+      if (k === 'type' && schema[k]) {
+        return validateArrayItemsHaveType(schema[k]);
+      } else if (k === 'validator' && schema[k]) {
+        return validateArrayItemsPass(schema[k]);
+      } else return null;
+    })
+    .filter(Boolean);
 
-  return [validateIsArray, ...flatten(vs)];
+  return [validateIsArray, ...vs];
 };
 
 /**

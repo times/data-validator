@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import {
-  processSchemaError,
   validateAsObjectSchema,
   validateAsArraySchema,
   fromObjectSchema,
@@ -20,26 +19,9 @@ import { isOK, isErr, err, ok, toResult } from '../src/lib/result';
 import { all, allWhileOK } from '../src/lib/compose';
 
 describe('schema', () => {
-  describe('#processSchemaError()', () => {
-    it('should return an array of a single validator which returns the appropriate errors prepended with "Schema error:"', () => {
-      const result = toResult(['Error one', 'Error two']);
-      const vs = processSchemaError(result);
-
-      expect(vs.length).to.equal(1);
-
-      const validate = all(vs);
-
-      expect(isErr(validate({}))).to.be.true;
-      expect(validate({}).errors).to.deep.equal([
-        'Schema error: Error one',
-        'Schema error: Error two',
-      ]);
-    });
-  });
-
   describe('#validateAsObjectSchema()', () => {
     it('should return a Result which validates the supplied object schema', () => {
-      const validSchema = validateAsObjectSchema({
+      const validSchema1 = validateAsObjectSchema({
         field1: {
           required: true,
         },
@@ -48,9 +30,17 @@ describe('schema', () => {
         },
       });
 
-      expect(isOK(validSchema)).to.be.true;
+      expect(isOK(validSchema1)).to.be.true;
 
-      const invalidSchema = validateAsObjectSchema({
+      const validSchema2 = validateAsObjectSchema({
+        field1: {
+          otherProp: true,
+        },
+      });
+
+      expect(isOK(validSchema2)).to.be.true;
+
+      const invalidSchema1 = validateAsObjectSchema({
         field1: {
           required: 'not-a-boolean',
         },
@@ -59,7 +49,7 @@ describe('schema', () => {
         },
       });
 
-      expect(isErr(invalidSchema)).to.be.true;
+      expect(isErr(invalidSchema1)).to.be.true;
     });
   });
 
