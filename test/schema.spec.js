@@ -17,7 +17,6 @@ import {
 } from '../src/lib/validators';
 
 import { isOK, isErr, err, ok, toResult } from '../src/lib/result';
-
 import { all, allWhileOK } from '../src/lib/compose';
 
 describe('schema', () => {

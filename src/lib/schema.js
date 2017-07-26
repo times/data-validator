@@ -1,7 +1,3 @@
-import type { ObjectSchema, SchemaRules } from './compose';
-
-import { all, allWhileOK } from './compose';
-
 import {
   validateIsObject,
   validateObjHasKey,
@@ -14,11 +10,27 @@ import {
   alwaysErr,
 } from './validators';
 
+import { all, allWhileOK } from './compose';
 import { isErr, err, mapErrors, getErrors } from './result';
+import { isObject } from './typecheck';
+import { flatten } from './helpers';
 
-import { flatten, isObject } from './helpers';
+/**
+ * Types
+ */
+type SchemaRules = {
+  required?: boolean,
+  type?: string,
+  validator?: Validator,
+};
 
-type ConvertToValidator = String => Validator;
+type ArraySchema = SchemaRules;
+type ObjectSchema = { [key: string]: SchemaRules };
+
+/**
+ * 
+ */
+type ConvertToValidator = string => Validator;
 const convertToValidator: ConvertToValidator = key => {
   if (key === 'required') return validateObjPropHasType('boolean')('required');
   if (key === 'type') return validateObjPropHasType('string')('type');
@@ -121,15 +133,15 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
   const schemaResult = validateAsArraySchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
-  return Object.keys(schema)
-    .map(k => {
-      if (k === 'type' && schema[k]) {
-        return [validateArrayItemsHaveType(schema[k])];
-      } else if (k === 'validator' && schema[k]) {
-        return [validateArrayItemsPass(schema[k])];
-      } else return [];
-    })
-    .reduce(flatten, [validateIsArray]);
+  const vs = Object.keys(schema).map(k => {
+    if (k === 'type' && schema[k]) {
+      return [validateArrayItemsHaveType(schema[k])];
+    } else if (k === 'validator' && schema[k]) {
+      return [validateArrayItemsPass(schema[k])];
+    } else return [];
+  });
+
+  return [validateIsArray, ...flatten(vs)];
 };
 
 /**

@@ -2,21 +2,11 @@
 
 import { isOK, ok, isErr, err, flattenResults } from './result';
 import type { Result } from './result';
-
 import type { Validator, Data } from './validators';
 
 /**
  * Types
  */
-export type SchemaRules = {
-  required?: boolean,
-  type?: string,
-  validator?: Validator,
-};
-
-type ArraySchema = SchemaRules;
-export type ObjectSchema = { [key: string]: SchemaRules };
-
 type Composer = (Array<Validator>) => Data => Result;
 
 /**
@@ -28,7 +18,7 @@ export const allWhileOK: Composer = validators => data =>
 
 /**
  * Run a series of validators such that all of the validators
- * must succeed. Otherwise, return all of the errors
+ * must succeed. Otherwise, returns all of the errors
  */
 export const all: Composer = validators => data =>
   flattenResults(validators.map(v => v(data)));
@@ -41,5 +31,5 @@ export const some: Composer = validators => data =>
   validators.reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
-    return isErr(vRes) ? err([...res.errors, ...vRes.errors]) : vRes;
-  }, err([]));
+    return isErr(vRes) ? flattenResults([res, vRes]) : vRes;
+  }, err());
