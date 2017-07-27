@@ -1,7 +1,6 @@
 // @flow
 
-import { isObject, isArray, isType } from './helpers';
-
+import { isObject, isArray, isType } from './typecheck';
 import { ok, err, toResult, mapErrors, flattenResults } from './result';
 import type { Result, Errors } from './result';
 
@@ -89,3 +88,9 @@ export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
  */
 type AlwaysErr = Errors => Validator;
 export const alwaysErr: AlwaysErr = errs => () => err(errs);
+
+/**
+ * Always OK
+ */
+type AlwaysOK = () => Validator;
+export const alwaysOK: AlwaysOK = () => () => ok();

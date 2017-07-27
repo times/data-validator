@@ -47,9 +47,3 @@ export const isType: IsType = type => val => {
       return typeof val === type;
   }
 };
-
-/**
- * Flattens two arrays
- */
-type Flatten = (Array<any>, Array<any>) => Array<any>;
-export const flatten: Flatten = (acc, vs) => [...acc, ...vs];

@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 
 import { all, allWhileOK, some } from '../src/lib/compose';
-
 import { isOK, isErr, ok, err, toResult } from '../src/lib/result';
 
 import {
@@ -11,8 +10,6 @@ import {
   validateIsArray,
   validateArrayItemsHaveType,
 } from '../src/lib/validators';
-
-import { fromObjectSchema, fromArraySchema } from '../src/lib/schema';
 
 describe('compose', () => {
   describe('#all()', () => {
@@ -156,48 +153,6 @@ describe('compose', () => {
         'Data was not an object',
         'Data was not an array',
       ]);
-    });
-
-    it('works as part of a schema', () => {
-      const validateObjectSchema = allWhileOK(
-        fromObjectSchema({
-          field2: {
-            required: true,
-            type: 'string',
-          },
-        })
-      );
-
-      const validateLteThree = n =>
-        n <= 3 ? ok() : err([`${n} was greater than 3`]);
-
-      const validateArraySchema = allWhileOK(
-        fromArraySchema({
-          type: 'number',
-          validator: validateLteThree,
-        })
-      );
-
-      const validate = allWhileOK(
-        fromObjectSchema({
-          field1: {
-            validator: some([validateObjectSchema, validateArraySchema]),
-          },
-        })
-      );
-
-      expect(isErr(validate({ field1: 123 }))).to.be.true;
-      expect(isErr(validate({ field1: 'abc' }))).to.be.true;
-
-      expect(isOK(validate({ field1: [] }))).to.be.true;
-      expect(isOK(validate({ field1: [1, 2, 3] }))).to.be.true;
-
-      expect(isErr(validate({ field1: [2, 3, 4] }))).to.be.true;
-
-      expect(isOK(validate({ field1: { field2: 'abc' } }))).to.be.true;
-
-      expect(isErr(validate({ field1: { field2: 123 } }))).to.be.true;
-      expect(isErr(validate({ field1: { field3: 'abc' } }))).to.be.true;
     });
 
     it('can be composed multiple times', () => {

@@ -5,9 +5,9 @@ import {
   isObject,
   isArray,
   isType,
-} from '../src/lib/helpers';
+} from '../src/lib/typecheck';
 
-describe('helpers', () => {
+describe('typecheck', () => {
   describe('#isISOString()', () => {
     it('should fail for non-strings', () => {
       expect(isISOString(1)).to.be.false;

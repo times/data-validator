@@ -10,6 +10,7 @@ import {
   validateArrayItemsHaveType,
   validateArrayItemsPass,
   alwaysErr,
+  alwaysOK,
 } from '../src/lib/validators';
 
 describe('validators', () => {
@@ -233,12 +234,22 @@ describe('validators', () => {
       expect(isErr(validate([1, 2, 3]))).to.be.true;
     });
 
-    it('should return a the error passed into it', () => {
+    it('should return the errors passed into it', () => {
       const errors = ['Error one', 'Error two'];
 
       const validate = alwaysErr(errors);
 
       expect(validate().errors).to.deep.equal(errors);
+    });
+  });
+
+  describe('#alwaysOK()', () => {
+    it('should return a validator that always succeeds', () => {
+      const validate = alwaysOK();
+
+      expect(isOK(validate())).to.be.true;
+      expect(isOK(validate({ test: '1234' }))).to.be.true;
+      expect(isOK(validate([1, 2, 3]))).to.be.true;
     });
   });
 });
