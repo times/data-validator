@@ -1,7 +1,7 @@
 {
-  "name": "@times/schema-validator",
+  "name": "@times/data-validator",
   "version": "0.5.0",
-  "description": "Basic schema validator for JS objects and arrays",
+  "description": "Simple, composable data validator for JavaScript",
   "main": "dist/index.js",
   "dependencies": {},
   "devDependencies": {
@@ -44,12 +44,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/times/schema-validator.git"
+    "url": "git+https://github.com/times/data-validator.git"
   },
   "bugs": {
-    "url": "https://github.com/times/schema-validator/issues"
+    "url": "https://github.com/times/data-validator/issues"
   },
-  "homepage": "https://github.com/times/schema-validator#readme",
+  "homepage": "https://github.com/times/data-validator#readme",
   "nyc": {
     "require": [
       "babel-register"
