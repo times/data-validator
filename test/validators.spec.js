@@ -9,6 +9,8 @@ import {
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
+  alwaysErr,
+  alwaysOK,
 } from '../src/lib/validators';
 
 describe('validators', () => {
@@ -220,6 +222,34 @@ describe('validators', () => {
     it('should return OK if all the items pass the given validator', () => {
       const res = validate([4, 5, 6]);
       expect(isOK(res)).to.be.true;
+    });
+  });
+
+  describe('#alwaysErr()', () => {
+    it('should return a validator that always errors', () => {
+      const validate = alwaysErr(['Error one', 'Error two']);
+
+      expect(isErr(validate())).to.be.true;
+      expect(isErr(validate({ test: '1234' }))).to.be.true;
+      expect(isErr(validate([1, 2, 3]))).to.be.true;
+    });
+
+    it('should return the errors passed into it', () => {
+      const errors = ['Error one', 'Error two'];
+
+      const validate = alwaysErr(errors);
+
+      expect(validate().errors).to.deep.equal(errors);
+    });
+  });
+
+  describe('#alwaysOK()', () => {
+    it('should return a validator that always succeeds', () => {
+      const validate = alwaysOK();
+
+      expect(isOK(validate())).to.be.true;
+      expect(isOK(validate({ test: '1234' }))).to.be.true;
+      expect(isOK(validate([1, 2, 3]))).to.be.true;
     });
   });
 });

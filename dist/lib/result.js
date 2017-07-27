@@ -52,3 +52,8 @@ var flattenResults = exports.flattenResults = function flattenResults(results) {
     return toResult([].concat(_toConsumableArray(acc.errors), _toConsumableArray(r.errors)));
   }, ok());
 };
+
+// Get the errors from a result
+var getErrors = exports.getErrors = function getErrors(result) {
+  return isErr(result) ? [].concat(_toConsumableArray(result.errors)) : [];
+};

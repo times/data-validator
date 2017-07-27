@@ -6,7 +6,6 @@
 export type Errors = Array<string>;
 
 type OK = { valid: true, errors: [] };
-
 type Err = { valid: false, errors: Errors };
 
 export type Result = OK | Err;
@@ -17,7 +16,7 @@ export type Result = OK | Err;
 type _ok = () => OK;
 export const ok: _ok = () => ({ valid: true, errors: [] });
 
-type _err = Errors => Err;
+type _err = (errs?: Errors) => Err;
 export const err: _err = (errs = []) => ({ valid: false, errors: errs });
 
 /**
@@ -42,3 +41,8 @@ export const mapErrors: MapErrors = f => r => toResult(r.errors.map(f));
 type FlattenResults = (Array<Result>) => Result;
 export const flattenResults: FlattenResults = results =>
   results.reduce((acc, r) => toResult([...acc.errors, ...r.errors]), ok());
+
+// Get the errors from a result
+type GetErrors = Result => Errors;
+export const getErrors: GetErrors = (result: Result) =>
+  isErr(result) ? [...result.errors] : [];

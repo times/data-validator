@@ -1,6 +1,6 @@
 {
   "name": "@times/schema-validator",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Basic schema validator for JS objects and arrays",
   "main": "dist/index.js",
   "dependencies": {},
@@ -28,7 +28,16 @@
     "validator",
     "validation"
   ],
-  "author": "Elliot Davies <elliot.davies@the-times.co.uk>",
+  "contributors": [
+    {
+      "name": "Elliot Davies",
+      "email": "elliot.davies@the-times.co.uk"
+    },
+    {
+      "name": "Chris Hutchinson",
+      "email": "chris.hutchinson@thetimes.co.uk"
+    }
+  ],
   "license": "ISC",
   "directories": {
     "test": "test"
