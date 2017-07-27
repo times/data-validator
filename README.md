@@ -1,8 +1,8 @@
-# Schema Validator
+# Data Validator
 
 > Simple functional and composable JavaScript validation library
 
-[![Build Status](https://travis-ci.org/times/schema-validator.svg?branch=master)](https://travis-ci.org/times/schema-validator) [![Code coverage](https://codecov.io/gh/times/schema-validator/branch/master/graph/badge.svg)](https://codecov.io/gh/times/schema-validator) [![npm version](https://badge.fury.io/js/%40times%2Fschema-validator.svg)](https://badge.fury.io/js/%40times%2Fschema-validator)
+[![Build Status](https://travis-ci.org/times/data-validator.svg?branch=master)](https://travis-ci.org/times/data-validator) [![Code coverage](https://codecov.io/gh/times/data-validator/branch/master/graph/badge.svg)](https://codecov.io/gh/times/data-validator) [![npm version](https://badge.fury.io/js/%40times%2Fdata-validator.svg)](https://badge.fury.io/js/%40times%2Fdata-validator)
 
 
 ## Use
