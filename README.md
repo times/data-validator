@@ -10,7 +10,7 @@
 Validate an object based on a schema:
 
 ```js
-const { objectValidator, ok, err } = require('@times/schema-validator');
+const { objectValidator, ok, err } = require('@times/data-validator');
 
 const objectSchema = {
   name: {
@@ -47,7 +47,7 @@ isValid(christopher); // { valid: false, errors: [ `At field "name": "Christophe
 Validate an array based on a schema:
 
 ```js
-const { arrayValidator, ok, err } = require('@times/schema-validator');
+const { arrayValidator, ok, err } = require('@times/data-validator');
 
 const arraySchema = {
   type: 'number',
