@@ -1,6 +1,6 @@
 {
   "name": "@times/data-validator",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Simple, composable data validator for JavaScript",
   "main": "dist/index.js",
   "dependencies": {},
