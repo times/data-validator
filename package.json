@@ -1,6 +1,6 @@
 {
   "name": "@times/data-validator",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Simple, composable data validator for JavaScript",
   "main": "dist/index.js",
   "dependencies": {},
@@ -23,11 +23,7 @@
     "build": "babel src -d dist",
     "prepublish": "npm run build"
   },
-  "keywords": [
-    "schema",
-    "validator",
-    "validation"
-  ],
+  "keywords": ["schema", "validator", "validation"],
   "contributors": [
     {
       "name": "Elliot Davies",
@@ -51,13 +47,8 @@
   },
   "homepage": "https://github.com/times/data-validator#readme",
   "nyc": {
-    "require": [
-      "babel-register"
-    ],
-    "reporter": [
-      "lcov",
-      "text"
-    ],
+    "require": ["babel-register"],
+    "reporter": ["lcov", "text"],
     "sourceMap": false,
     "instrument": false
   }

@@ -7,6 +7,7 @@ export {
   isErr,
   toResult,
   mapErrors,
+  prefixErrors,
   flattenResults,
   getErrors,
 } from './lib/result';
@@ -30,6 +31,11 @@ export {
 } from './lib/typecheck';
 
 export {
+  alwaysErr,
+  alwaysOK,
+  fromPredicate,
+  validateIsType,
+  validateIsIn,
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
@@ -38,6 +44,4 @@ export {
   validateIsArray,
   validateArrayItemsHaveType,
   validateArrayItemsPass,
-  alwaysErr,
-  alwaysOK,
 } from './lib/validators';
