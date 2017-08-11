@@ -26,25 +26,35 @@ export const alwaysOK: AlwaysOK = () => () => ok();
 /**
  * Construct a validator from a boolean function
  */
-type FromBooleanFunction = ((Data) => boolean, (Data) => string) => Validator;
-export const fromBooleanFunction: FromBooleanFunction = (
-  test,
-  toErrMsg
-) => data => (test(data) ? ok() : err([toErrMsg(data)]));
+type FromPredicate = ((Data) => boolean, (Data) => string) => Validator;
+export const fromPredicate: FromPredicate = (test, toErrMsg) => data =>
+  test(data) ? ok() : err([toErrMsg(data)]);
+
+/**
+ * Is the given object of the given type?
+ */
+type ValidateIsType = string => Validator;
+export const validateIsType: ValidateIsType = type =>
+  fromPredicate(
+    isType(type),
+    data => `"${data}" failed to typecheck (expected ${type})`
+  );
 
 /**
  * Is the given data an object?
  */
 type ValidateIsObject = Validator;
-export const validateIsObject: ValidateIsObject = data =>
-  isObject(data) ? ok() : err([`Data was not an object`]);
+export const validateIsObject: ValidateIsObject = validateIsType('object');
 
 /**
  * Does the object have the given key?
  */
 type ValidateObjHasKey = string => Validator;
-export const validateObjHasKey: ValidateObjHasKey = key => obj =>
-  obj.hasOwnProperty(key) ? ok() : err([`Missing required field "${key}"`]);
+export const validateObjHasKey: ValidateObjHasKey = key =>
+  fromPredicate(
+    obj => obj.hasOwnProperty(key),
+    () => `Missing required field "${key}"`
+  );
 
 /**
  * If the given object property exists, does it typecheck?
@@ -81,19 +91,14 @@ export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = keys => obj =>
  * Is the given data an array?
  */
 type ValidateIsArray = Validator;
-export const validateIsArray: ValidateIsArray = data =>
-  isArray(data) ? ok() : err([`Data was not an array`]);
+export const validateIsArray: ValidateIsArray = validateIsType('array');
 
 /**
  * Does each array item typecheck?
  */
 type ValidateArrayItemsHaveType = string => Validator;
 export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
-  toResult(
-    arr
-      .filter(a => !isType(type)(a))
-      .map(a => `Item "${a}" failed to typecheck (expected ${type})`)
-  );
+  mapErrors(e => `Item ${e}`)(flattenResults(arr.map(validateIsType(type))));
 
 /**
  * Does each array item pass the given validator?
