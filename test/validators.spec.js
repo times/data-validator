@@ -5,6 +5,7 @@ import {
   alwaysOK,
   fromPredicate,
   validateIsType,
+  validateIsIn,
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
@@ -77,6 +78,26 @@ describe('validators', () => {
       expect(isOK(validateIsType('boolean')(false))).to.be.true;
       expect(isOK(validateIsType('number')(123))).to.be.true;
       expect(isOK(validateIsType('string')('sss'))).to.be.true;
+    });
+  });
+
+  describe('#validateIsIn()', () => {
+    it('should return an Err when the value is not in the provided array', () => {
+      const validate = validateIsIn([1, 2, 3, 4, 5]);
+      expect(isErr(validate(-5))).to.be.true;
+      expect(isErr(validate(0))).to.be.true;
+      expect(isErr(validate('1'))).to.be.true;
+      expect(isErr(validate(6))).to.be.true;
+
+      expect(getErrors(validate(6))).to.deep.equal([
+        `Value must be one of 1, 2, 3, 4, 5 (got "6")`,
+      ]);
+    });
+
+    it('should return OK when the value is in the provided array', () => {
+      const validate = validateIsIn([1, 2, 3, 4, 5]);
+      expect(isOK(validate(1))).to.be.true;
+      expect(isOK(validate(5))).to.be.true;
     });
   });
 

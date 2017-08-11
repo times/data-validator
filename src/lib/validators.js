@@ -41,6 +41,16 @@ export const validateIsType: ValidateIsType = type =>
   );
 
 /**
+ * Is the given value in the given array of values?
+ */
+type ValidateIsIn = (Array<*>) => Validator;
+export const validateIsIn: ValidateIsIn = values =>
+  fromPredicate(
+    val => values.includes(val),
+    val => `Value must be one of ${values.join(', ')} (got "${val}")`
+  );
+
+/**
  * Is the given data an object?
  */
 type ValidateIsObject = Validator;
