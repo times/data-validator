@@ -6,6 +6,7 @@ import {
   isErr,
   toResult,
   mapErrors,
+  prefixErrors,
   flattenResults,
   getErrors,
 } from '../src/lib/result';
@@ -81,6 +82,22 @@ describe('result', () => {
       const res = err(['a', 'b', 'c']);
 
       expect(map(res).errors).to.deep.equal(['1. a', '2. b', '3. c']);
+    });
+  });
+
+  describe('#prefixErrors()', () => {
+    it('should not change the type of the Result', () => {
+      const map = prefixErrors('something');
+
+      expect(isOK(map(ok())));
+      expect(isErr(map(err())));
+    });
+
+    it('should prefix each error in a Result', () => {
+      const map = prefixErrors('P: ');
+      const res = err(['a', 'b', 'c']);
+
+      expect(map(res).errors).to.deep.equal(['P: a', 'P: b', 'P: c']);
     });
   });
 

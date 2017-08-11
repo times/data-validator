@@ -1,7 +1,7 @@
 // @flow
 
-import { isObject, isArray, isType } from './typecheck';
-import { ok, err, toResult, mapErrors, flattenResults } from './result';
+import { isType } from './typecheck';
+import { ok, err, toResult, prefixErrors, flattenResults } from './result';
 import type { Result, Errors } from './result';
 
 /**
@@ -73,7 +73,7 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
 type ValidateObjPropPasses = Validator => string => Validator;
 export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-  return mapErrors(e => `At field "${key}": ${e}`)(v(obj[key]));
+  return prefixErrors(`At field "${key}": `)(v(obj[key]));
 };
 
 /**
@@ -98,7 +98,7 @@ export const validateIsArray: ValidateIsArray = validateIsType('array');
  */
 type ValidateArrayItemsHaveType = string => Validator;
 export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
-  mapErrors(e => `Item ${e}`)(flattenResults(arr.map(validateIsType(type))));
+  prefixErrors(`Item `)(flattenResults(arr.map(validateIsType(type))));
 
 /**
  * Does each array item pass the given validator?
@@ -106,5 +106,5 @@ export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => ar
 type ValidateArrayItemsPass = Validator => Validator;
 export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
   flattenResults(
-    arr.map(v).map((res, i) => mapErrors(e => `At item ${i}: ${e}`)(res))
+    arr.map(v).map((res, i) => prefixErrors(`At item ${i}: `)(res))
   );
