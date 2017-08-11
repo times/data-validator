@@ -12,6 +12,27 @@ export type Data = any;
 export type Validator = Data => Result;
 
 /**
+ * Always an error
+ */
+type AlwaysErr = Errors => Validator;
+export const alwaysErr: AlwaysErr = errs => () => err(errs);
+
+/**
+ * Always OK
+ */
+type AlwaysOK = () => Validator;
+export const alwaysOK: AlwaysOK = () => () => ok();
+
+/**
+ * Construct a validator from a boolean function
+ */
+type FromBooleanFunction = ((Data) => boolean, (Data) => string) => Validator;
+export const fromBooleanFunction: FromBooleanFunction = (
+  test,
+  toErrMsg
+) => data => (test(data) ? ok() : err([toErrMsg(data)]));
+
+/**
  * Is the given data an object?
  */
 type ValidateIsObject = Validator;
@@ -82,15 +103,3 @@ export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
   flattenResults(
     arr.map(v).map((res, i) => mapErrors(e => `At item ${i}: ${e}`)(res))
   );
-
-/**
- * Always an error
- */
-type AlwaysErr = Errors => Validator;
-export const alwaysErr: AlwaysErr = errs => () => err(errs);
-
-/**
- * Always OK
- */
-type AlwaysOK = () => Validator;
-export const alwaysOK: AlwaysOK = () => () => ok();

@@ -1,6 +1,7 @@
 import { expect } from 'chai';
-import { isOK, isErr, ok, err } from '../src/lib/result';
+import { isOK, isErr, ok, err, getErrors } from '../src/lib/result';
 import {
+  fromBooleanFunction,
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
@@ -14,6 +15,55 @@ import {
 } from '../src/lib/validators';
 
 describe('validators', () => {
+  describe('#alwaysErr()', () => {
+    it('should return a validator that always errors', () => {
+      const validate = alwaysErr(['Error one', 'Error two']);
+
+      expect(isErr(validate())).to.be.true;
+      expect(isErr(validate({ test: '1234' }))).to.be.true;
+      expect(isErr(validate([1, 2, 3]))).to.be.true;
+    });
+
+    it('should return the errors passed into it', () => {
+      const errors = ['Error one', 'Error two'];
+
+      const validate = alwaysErr(errors);
+
+      expect(validate().errors).to.deep.equal(errors);
+    });
+  });
+
+  describe('#alwaysOK()', () => {
+    it('should return a validator that always succeeds', () => {
+      const validate = alwaysOK();
+
+      expect(isOK(validate())).to.be.true;
+      expect(isOK(validate({ test: '1234' }))).to.be.true;
+      expect(isOK(validate([1, 2, 3]))).to.be.true;
+    });
+  });
+
+  describe('#fromBooleanFunction()', () => {
+    it('constructs a validator that returns an OK if the test function passes', () => {
+      const validate = fromBooleanFunction(
+        x => x === 10,
+        x => `${x} was not 10`
+      );
+
+      expect(isOK(validate(10))).to.be.true;
+      expect(isErr(validate(15))).to.be.true;
+    });
+
+    it('constructs a validator that returns an Err using the given error function if the test function fails', () => {
+      const validate = fromBooleanFunction(
+        x => x === 10,
+        x => `${x} was not 10`
+      );
+
+      expect(getErrors(validate(15))).to.deep.equal(['15 was not 10']);
+    });
+  });
+
   describe('#validateIsObject()', () => {
     it('should return an Err when the given data is not an object', () => {
       const res = validateIsObject('string');
@@ -222,34 +272,6 @@ describe('validators', () => {
     it('should return OK if all the items pass the given validator', () => {
       const res = validate([4, 5, 6]);
       expect(isOK(res)).to.be.true;
-    });
-  });
-
-  describe('#alwaysErr()', () => {
-    it('should return a validator that always errors', () => {
-      const validate = alwaysErr(['Error one', 'Error two']);
-
-      expect(isErr(validate())).to.be.true;
-      expect(isErr(validate({ test: '1234' }))).to.be.true;
-      expect(isErr(validate([1, 2, 3]))).to.be.true;
-    });
-
-    it('should return the errors passed into it', () => {
-      const errors = ['Error one', 'Error two'];
-
-      const validate = alwaysErr(errors);
-
-      expect(validate().errors).to.deep.equal(errors);
-    });
-  });
-
-  describe('#alwaysOK()', () => {
-    it('should return a validator that always succeeds', () => {
-      const validate = alwaysOK();
-
-      expect(isOK(validate())).to.be.true;
-      expect(isOK(validate({ test: '1234' }))).to.be.true;
-      expect(isOK(validate([1, 2, 3]))).to.be.true;
     });
   });
 });
