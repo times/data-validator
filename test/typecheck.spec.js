@@ -94,6 +94,9 @@ describe('typecheck', () => {
       expect(isType('number')('1')).to.be.false;
       expect(isType('object')(new Date())).to.be.false;
       expect(isType('number')(new Date())).to.be.false;
+      expect(isType('boolean')(0)).to.be.false;
+      expect(isType(null)(false)).to.be.false;
+      expect(isType(undefined)(null)).to.be.false;
 
       const f = () => {};
       expect(isType('object')(f)).to.be.false;
@@ -105,6 +108,10 @@ describe('typecheck', () => {
       expect(isType('object')({})).to.be.true;
       expect(isType('string')('sss')).to.be.true;
       expect(isType('date')(new Date())).to.be.true;
+      expect(isType('boolean')(true)).to.be.true;
+      expect(isType('boolean')(false)).to.be.true;
+      expect(isType('null')(null)).to.be.true;
+      expect(isType('undefined')(undefined)).to.be.true;
 
       const f = () => {};
       expect(isType('function')(f)).to.be.true;

@@ -22,14 +22,20 @@ export const isDate: IsDate = val => val instanceof Date || isISOString(val);
  * Is the parameter a non-array, non-date object?
  */
 type IsObject = any => boolean;
-export const isObject: IsObject = data =>
-  data && typeof data === 'object' && !isArray(data) && !isDate(data);
+export const isObject: IsObject = val =>
+  val && typeof val === 'object' && !isArray(val) && !isDate(val);
 
 /**
  * Is the parameter an array?
  */
 type IsArray = any => boolean;
 export const isArray: IsArray = arr => Array.isArray(arr);
+
+/**
+ * Is the parameter null?
+ */
+type IsNull = any => boolean;
+export const isNull: IsNull = val => val === null;
 
 /**
  * Does the given value match the given type?
@@ -43,6 +49,8 @@ export const isType: IsType = type => val => {
       return isDate(val);
     case 'object':
       return isObject(val);
+    case 'null':
+      return isNull(val);
     default:
       return typeof val === type;
   }
