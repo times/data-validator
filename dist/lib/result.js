@@ -46,6 +46,13 @@ var mapErrors = exports.mapErrors = function mapErrors(f) {
   };
 };
 
+// Prefix every error in a Result with the given string
+var prefixErrors = exports.prefixErrors = function prefixErrors(prefix) {
+  return mapErrors(function (e) {
+    return "" + prefix + e;
+  });
+};
+
 // Flatten an array of Results into a single Result
 var flattenResults = exports.flattenResults = function flattenResults(results) {
   return results.reduce(function (acc, r) {

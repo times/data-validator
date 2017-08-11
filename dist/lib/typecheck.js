@@ -27,8 +27,8 @@ var isDate = exports.isDate = function isDate(val) {
 /**
  * Is the parameter a non-array, non-date object?
  */
-var isObject = exports.isObject = function isObject(data) {
-  return data && (typeof data === 'undefined' ? 'undefined' : _typeof(data)) === 'object' && !isArray(data) && !isDate(data);
+var isObject = exports.isObject = function isObject(val) {
+  return val && (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === 'object' && !isArray(val) && !isDate(val);
 };
 
 /**
@@ -36,6 +36,13 @@ var isObject = exports.isObject = function isObject(data) {
  */
 var isArray = exports.isArray = function isArray(arr) {
   return Array.isArray(arr);
+};
+
+/**
+ * Is the parameter null?
+ */
+var isNull = exports.isNull = function isNull(val) {
+  return val === null;
 };
 
 /**
@@ -50,6 +57,8 @@ var isType = exports.isType = function isType(type) {
         return isDate(val);
       case 'object':
         return isObject(val);
+      case 'null':
+        return isNull(val);
       default:
         return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === type;
     }
