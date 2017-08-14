@@ -21,7 +21,7 @@
     "test": "NODE_ENV=test nyc mocha ./test",
     "flow": "flow",
     "build": "babel src -d dist",
-    "prepublish": "npm run build"
+    "prepublish": "rm -r dist && npm run build"
   },
   "keywords": ["schema", "validator", "validation"],
   "contributors": [
