@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.alwaysOK = exports.alwaysErr = exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = undefined;
+exports.validateArrayItemsPass = exports.validateArrayItemsHaveType = exports.validateIsArray = exports.validateObjOnlyHasKeys = exports.validateObjPropPasses = exports.validateObjPropHasType = exports.validateObjHasKey = exports.validateIsObject = exports.validateIsIn = exports.validateIsType = exports.fromPredicate = exports.alwaysOK = exports.alwaysErr = undefined;
 
 var _typecheck = require('./typecheck');
 
@@ -15,19 +15,66 @@ var _result = require('./result');
 
 
 /**
+ * Always an error
+ */
+var alwaysErr = exports.alwaysErr = function alwaysErr(errs) {
+  return function () {
+    return (0, _result.err)(errs);
+  };
+};
+
+/**
+ * Always OK
+ */
+var alwaysOK = exports.alwaysOK = function alwaysOK() {
+  return function () {
+    return (0, _result.ok)();
+  };
+};
+
+/**
+ * Construct a validator from a boolean function
+ */
+var fromPredicate = exports.fromPredicate = function fromPredicate(test, toErrMsg) {
+  return function (data) {
+    return test(data) ? (0, _result.ok)() : (0, _result.err)([toErrMsg(data)]);
+  };
+};
+
+/**
+ * Is the given object of the given type?
+ */
+var validateIsType = exports.validateIsType = function validateIsType(type) {
+  return fromPredicate((0, _typecheck.isType)(type), function (data) {
+    return '"' + data + '" failed to typecheck (expected ' + type + ')';
+  });
+};
+
+/**
+ * Is the given value in the given array of values?
+ */
+var validateIsIn = exports.validateIsIn = function validateIsIn(values) {
+  return fromPredicate(function (val) {
+    return values.includes(val);
+  }, function (val) {
+    return 'Value must be one of ' + values.join(', ') + ' (got "' + val + '")';
+  });
+};
+
+/**
  * Is the given data an object?
  */
-var validateIsObject = exports.validateIsObject = function validateIsObject(data) {
-  return (0, _typecheck.isObject)(data) ? (0, _result.ok)() : (0, _result.err)(['Data was not an object']);
-};
+var validateIsObject = exports.validateIsObject = validateIsType('object');
 
 /**
  * Does the object have the given key?
  */
 var validateObjHasKey = exports.validateObjHasKey = function validateObjHasKey(key) {
-  return function (obj) {
-    return obj.hasOwnProperty(key) ? (0, _result.ok)() : (0, _result.err)(['Missing required field "' + key + '"']);
-  };
+  return fromPredicate(function (obj) {
+    return obj.hasOwnProperty(key);
+  }, function () {
+    return 'Missing required field "' + key + '"';
+  });
 };
 
 /**
@@ -49,9 +96,7 @@ var validateObjPropPasses = exports.validateObjPropPasses = function validateObj
   return function (key) {
     return function (obj) {
       if (!obj.hasOwnProperty(key)) return (0, _result.ok)();
-      return (0, _result.mapErrors)(function (e) {
-        return 'At field "' + key + '": ' + e;
-      })(v(obj[key]));
+      return (0, _result.prefixErrors)('At field "' + key + '": ')(v(obj[key]));
     };
   };
 };
@@ -72,20 +117,14 @@ var validateObjOnlyHasKeys = exports.validateObjOnlyHasKeys = function validateO
 /**
  * Is the given data an array?
  */
-var validateIsArray = exports.validateIsArray = function validateIsArray(data) {
-  return (0, _typecheck.isArray)(data) ? (0, _result.ok)() : (0, _result.err)(['Data was not an array']);
-};
+var validateIsArray = exports.validateIsArray = validateIsType('array');
 
 /**
  * Does each array item typecheck?
  */
 var validateArrayItemsHaveType = exports.validateArrayItemsHaveType = function validateArrayItemsHaveType(type) {
   return function (arr) {
-    return (0, _result.toResult)(arr.filter(function (a) {
-      return !(0, _typecheck.isType)(type)(a);
-    }).map(function (a) {
-      return 'Item "' + a + '" failed to typecheck (expected ' + type + ')';
-    }));
+    return (0, _result.prefixErrors)('Item ')((0, _result.flattenResults)(arr.map(validateIsType(type))));
   };
 };
 
@@ -95,27 +134,7 @@ var validateArrayItemsHaveType = exports.validateArrayItemsHaveType = function v
 var validateArrayItemsPass = exports.validateArrayItemsPass = function validateArrayItemsPass(v) {
   return function (arr) {
     return (0, _result.flattenResults)(arr.map(v).map(function (res, i) {
-      return (0, _result.mapErrors)(function (e) {
-        return 'At item ' + i + ': ' + e;
-      })(res);
+      return (0, _result.prefixErrors)('At item ' + i + ': ')(res);
     }));
-  };
-};
-
-/**
- * Always an error
- */
-var alwaysErr = exports.alwaysErr = function alwaysErr(errs) {
-  return function () {
-    return (0, _result.err)(errs);
-  };
-};
-
-/**
- * Always OK
- */
-var alwaysOK = exports.alwaysOK = function alwaysOK() {
-  return function () {
-    return (0, _result.ok)();
   };
 };

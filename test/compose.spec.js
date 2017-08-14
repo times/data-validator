@@ -42,7 +42,7 @@ describe('compose', () => {
       const validate = all([validateIsObject, validateObjHasKey('field1')]);
 
       expect(validate('not an object').errors).to.deep.equal([
-        `Data was not an object`,
+        `"not an object" failed to typecheck (expected object)`,
         `Missing required field \"field1\"`,
       ]);
 
@@ -106,7 +106,7 @@ describe('compose', () => {
       ]);
 
       expect(validate('not an object').errors).to.deep.equal([
-        `Data was not an object`,
+        `"not an object" failed to typecheck (expected object)`,
       ]);
 
       expect(validate({}).errors).to.deep.equal([
@@ -150,8 +150,8 @@ describe('compose', () => {
     it('returns errors from all the validators if it fails', () => {
       const validate = some([validateIsObject, validateIsArray]);
       expect(validate(123).errors).to.deep.equal([
-        'Data was not an object',
-        'Data was not an array',
+        '"123" failed to typecheck (expected object)',
+        '"123" failed to typecheck (expected array)',
       ]);
     });
 

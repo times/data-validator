@@ -37,6 +37,11 @@ export const toResult: ToResult = errs =>
 type MapErrors = ((string) => string) => Result => Result;
 export const mapErrors: MapErrors = f => r => toResult(r.errors.map(f));
 
+// Prefix every error in a Result with the given string
+type PrefixErrors = string => Result => Result;
+export const prefixErrors: PrefixErrors = prefix =>
+  mapErrors(e => `${prefix}${e}`);
+
 // Flatten an array of Results into a single Result
 type FlattenResults = (Array<Result>) => Result;
 export const flattenResults: FlattenResults = results =>
