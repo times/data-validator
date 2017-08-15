@@ -26,7 +26,7 @@
     "test": "NODE_ENV=test nyc mocha ./test",
     "flow": "flow",
     "build": "rollup -c",
-    "prepublish": "rm -r dist && yarn build"
+    "prepublishOnly": "rm -r dist && yarn build"
   },
   "keywords": ["schema", "validator", "validation"],
   "contributors": [
