@@ -4,11 +4,12 @@
   "description": "Simple, composable data validator for JavaScript",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
-  "dependencies": {},
+  "dependencies": {
+    "babel-plugin-external-helpers": "^6.22.0"
+  },
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-core": "^6.25.0",
-    "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-istanbul": "^4.1.4",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
@@ -28,7 +29,11 @@
     "build": "rollup -c",
     "prepublishOnly": "rm -r dist && yarn build"
   },
-  "keywords": ["schema", "validator", "validation"],
+  "keywords": [
+    "schema",
+    "validator",
+    "validation"
+  ],
   "contributors": [
     {
       "name": "Elliot Davies",
@@ -52,8 +57,13 @@
   },
   "homepage": "https://github.com/times/data-validator#readme",
   "nyc": {
-    "require": ["babel-register"],
-    "reporter": ["lcov", "text"],
+    "require": [
+      "babel-register"
+    ],
+    "reporter": [
+      "lcov",
+      "text"
+    ],
     "sourceMap": false,
     "instrument": false
   }
