@@ -45,7 +45,11 @@ export const prefixErrors: PrefixErrors = prefix =>
 // Flatten an array of Results into a single Result
 type FlattenResults = (Array<Result>) => Result;
 export const flattenResults: FlattenResults = results =>
-  results.reduce((acc, r) => toResult([...acc.errors, ...r.errors]), ok());
+  results.reduce(
+    (acc, r) =>
+      isErr(acc) || isErr(r) ? err([...getErrors(acc), ...getErrors(r)]) : ok(),
+    ok()
+  );
 
 // Get the errors from a result
 type GetErrors = Result => Errors;

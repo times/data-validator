@@ -49,6 +49,7 @@ describe('result', () => {
   describe('#isErr()', () => {
     it('returns true only for an Err object', () => {
       expect(isErr(err())).to.be.true;
+      expect(isErr(err(['Error message']))).to.be.true;
 
       expect(isErr(ok())).to.be.false;
       expect(isErr({})).to.be.false;
@@ -117,6 +118,12 @@ describe('result', () => {
       const res = flattenResults([err(['a']), ok(), err(['c'])]);
       expect(isErr(res)).to.be.true;
       expect(res.errors).to.deep.equal(['a', 'c']);
+    });
+
+    it('should flatten a mixed Results array into an Err when the Errs have no messages', () => {
+      const res = flattenResults([ok(), err()]);
+      expect(isErr(res)).to.be.true;
+      expect(res.errors).to.deep.equal([]);
     });
   });
 
