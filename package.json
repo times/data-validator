@@ -1,9 +1,12 @@
 {
   "name": "@times/data-validator",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Simple, composable data validator for JavaScript",
-  "main": "dist/index.js",
-  "dependencies": {},
+  "main": "dist/index.umd.js",
+  "module": "dist/index.esm.js",
+  "dependencies": {
+    "babel-plugin-external-helpers": "^6.22.0"
+  },
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-core": "^6.25.0",
@@ -11,19 +14,26 @@
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
+    "babelrc-rollup": "^3.0.0",
     "chai": "^3.5.0",
     "flow-bin": "^0.48.0",
     "istanbul": "^0.4.5",
     "mocha": "^3.2.0",
-    "nyc": "^11.0.2"
+    "nyc": "^11.0.2",
+    "rollup": "^0.47.4",
+    "rollup-plugin-babel": "^3.0.1"
   },
   "scripts": {
     "test": "NODE_ENV=test nyc mocha ./test",
     "flow": "flow",
-    "build": "babel src -d dist",
-    "prepublish": "npm run build"
+    "build": "rollup -c",
+    "prepublishOnly": "rm -r dist && yarn build"
   },
-  "keywords": ["schema", "validator", "validation"],
+  "keywords": [
+    "schema",
+    "validator",
+    "validation"
+  ],
   "contributors": [
     {
       "name": "Elliot Davies",
@@ -47,8 +57,13 @@
   },
   "homepage": "https://github.com/times/data-validator#readme",
   "nyc": {
-    "require": ["babel-register"],
-    "reporter": ["lcov", "text"],
+    "require": [
+      "babel-register"
+    ],
+    "reporter": [
+      "lcov",
+      "text"
+    ],
     "sourceMap": false,
     "instrument": false
   }

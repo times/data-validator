@@ -42,7 +42,7 @@ const christopher = {
 }
 isValid(christopher); // { valid: false, errors: [ `At field "name": "Christopher" was longer than 10` ] }
 ```
-    
+
 
 Validate an array based on a schema:
 
@@ -136,6 +136,12 @@ During development you can run tests with
 The library uses Flow for type checking. You can run Flow with
 
     yarn flow
+
+You can build the project with
+
+    yarn build
+
+The build process uses Rollup to generate UMD and ES module versions of the bundle.
 
 
 ## Contact
