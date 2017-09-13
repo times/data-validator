@@ -1,0 +1,10 @@
+coverage
+node_modules
+test
+src
+.babelrc
+.flowconfig
+.nyc_output
+.travis.yml
+rollup.config.js
+yarn.lock
