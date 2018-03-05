@@ -20,6 +20,7 @@
     "istanbul": "^0.4.5",
     "mocha": "^3.2.0",
     "nyc": "^11.0.2",
+    "ramda": "^0.25.0",
     "rollup": "^0.47.4",
     "rollup-plugin-babel": "^3.0.1"
   },
@@ -29,7 +30,11 @@
     "build": "rollup -c",
     "prepublishOnly": "rm -r dist && yarn build"
   },
-  "keywords": ["schema", "validator", "validation"],
+  "keywords": [
+    "schema",
+    "validator",
+    "validation"
+  ],
   "contributors": [
     {
       "name": "Elliot Davies",
@@ -53,8 +58,13 @@
   },
   "homepage": "https://github.com/times/data-validator#readme",
   "nyc": {
-    "require": ["babel-register"],
-    "reporter": ["lcov", "text"],
+    "require": [
+      "babel-register"
+    ],
+    "reporter": [
+      "lcov",
+      "text"
+    ],
     "sourceMap": false,
     "instrument": false
   }
