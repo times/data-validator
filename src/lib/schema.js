@@ -1,4 +1,5 @@
 // @flow
+import { append, filter, keys, map, prepend } from 'ramda';
 
 import {
   type Validator,
@@ -16,8 +17,8 @@ import {
 
 import { all, allWhileOK } from './compose';
 import { type Result, isErr, err, mapErrors } from './result';
-import { getErrors } from './printer';
 import { isObject } from './typecheck';
+import { getErrors } from './printer';
 
 /**
  * Types
@@ -53,8 +54,8 @@ const convertSchemaRuleToValidator: ConvertSchemaRuleToValidator = key => {
  */
 type ValidateAsSchemaRules = SchemaRules => Result;
 const validateAsSchemaRules: ValidateAsSchemaRules = rules => {
-  const ruleValidators = Object.keys(rules).map(convertSchemaRuleToValidator);
-  return allWhileOK([validateIsObject, ...ruleValidators])(rules);
+  const ruleValidators = map(convertSchemaRuleToValidator, keys(rules));
+  return allWhileOK(prepend(validateIsObject, ruleValidators))(rules);
 };
 
 /**
@@ -79,7 +80,7 @@ type ValidateAsObjectSchema = ObjectSchema => Result;
 export const validateAsObjectSchema: ValidateAsObjectSchema = schema =>
   allWhileOK([
     validateIsObject,
-    ...Object.keys(schema).map(validateAsNestedSchemaRules)
+    ...map(validateAsNestedSchemaRules, keys(schema))
   ])(schema);
 
 /**
@@ -100,23 +101,26 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
   const schemaResult = validateAsObjectSchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
-  const requiredChecks = Object.keys(schema)
-    .filter(k => schema[k].required)
-    .map(validateObjHasKey);
+  const requiredChecks = map(
+    validateObjHasKey,
+    filter(k => schema[k].required, keys(schema))
+  );
 
-  const typeChecks = Object.keys(schema)
-    .map(k => {
+  const typeChecks = filter(
+    Boolean,
+    map(k => {
       const type = schema[k].type;
       return type ? validateObjPropHasType(type)(k) : null;
-    })
-    .filter(Boolean);
+    }, keys(schema))
+  );
 
-  const validatorChecks = Object.keys(schema)
-    .map(k => {
+  const validatorChecks = filter(
+    Boolean,
+    map(k => {
       const validator = schema[k].validator;
       return validator ? validateObjPropPasses(validator)(k) : null;
-    })
-    .filter(Boolean);
+    }, keys(schema))
+  );
 
   return [
     validateIsObject,
@@ -132,7 +136,7 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 export const fromObjectSchemaStrict: FromObjectSchema = (schema = {}) => {
   const vs = fromObjectSchema(schema);
   return isObject(schema)
-    ? [...vs, validateObjOnlyHasKeys(Object.keys(schema))]
+    ? append(validateObjOnlyHasKeys(keys(schema)), vs)
     : vs;
 };
 
@@ -147,17 +151,18 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
   const schemaResult = validateAsArraySchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
-  const vs = Object.keys(schema)
-    .map(k => {
+  const vs = filter(
+    Boolean,
+    map(k => {
       if (k === 'type' && schema[k]) {
         return validateArrayItemsHaveType(schema[k]);
       } else if (k === 'validator' && schema[k]) {
         return validateArrayItemsPass(schema[k]);
       } else return null;
-    })
-    .filter(Boolean);
+    }, keys(schema))
+  );
 
-  return [validateIsArray, ...vs];
+  return prepend(validateIsArray, vs);
 };
 
 /**

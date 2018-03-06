@@ -29,8 +29,8 @@ export const all: Composer = validators => data =>
  * succeed. Otherwise, returns all of the errors
  */
 export const some: Composer = validators => data =>
-  validators.reduce((res, v) => {
+  reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
     return isErr(vRes) ? mergeResults(res, vRes) : vRes;
-  }, err());
+  }, err())(validators);
