@@ -1,8 +1,16 @@
 // @flow
+import { addIndex, filter, keys, map } from 'ramda';
 
 import { isType } from './typecheck';
-import { ok, err, prefixErrors, concatResults } from './result';
-import type { Result, Errors } from './result';
+import {
+  type Result,
+  type Errors,
+  toResult,
+  ok,
+  err,
+  prefixErrors,
+  concatResults
+} from './result';
 
 /**
  * Types
@@ -90,11 +98,12 @@ export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
  * Does the object have any fields not present in the schema?
  */
 type ValidateObjOnlyHasKeys = (Array<string>) => Validator;
-export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = keys => obj =>
-  toResult(
-    Object.keys(obj)
-      .filter(k => !keys.includes(k))
-      .map(k => `Extra field "${k}"`)
+export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = requiredKeys => obj =>
+  concatResults(
+    map(
+      k => err([`Extra field "${k}"`]),
+      filter(k => !requiredKeys.includes(k), keys(obj))
+    )
   );
 
 /**
@@ -108,7 +117,7 @@ export const validateIsArray: ValidateIsArray = validateIsType('array');
  */
 type ValidateArrayItemsHaveType = string => Validator;
 export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
-  prefixErrors(`Item `)(concatResults(arr.map(validateIsType(type))));
+  prefixErrors(`Item `)(concatResults(map(validateIsType(type), arr)));
 
 /**
  * Does each array item pass the given validator?
@@ -116,5 +125,5 @@ export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => ar
 type ValidateArrayItemsPass = Validator => Validator;
 export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
   concatResults(
-    arr.map(v).map((res, i) => prefixErrors(`At item ${i}: `)(res))
+    addIndex(map)((res, i) => prefixErrors(`At item ${i}: `)(res), map(v, arr))
   );

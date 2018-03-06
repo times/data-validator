@@ -37,6 +37,11 @@ export const isOK: IsOK = ({ valid }) => valid !== undefined && valid;
 type IsErr = Result => boolean;
 export const isErr: IsErr = ({ valid }) => valid !== undefined && !valid;
 
+// Convert a (possibly empty) array of errors into a Result
+type ToResult = Errors => Result;
+export const toResult: ToResult = errs =>
+  errs.length === 0 ? ok() : err(errs);
+
 // Apply a function to every error in a Result
 type MapErrors = ((string, ?number) => string) => Result => Result;
 export const mapErrors: MapErrors = f => r => {
@@ -63,13 +68,14 @@ export const mergeResults: MergeResults = (r1, r2) => {
   if (r1.valid) return r2;
   if (r2.valid) return r1;
 
+  // @TODO this will cause an `items` key to exist where it didn't before
   const r1Items = r1.items || {};
   const r2Items = r2.items || {};
 
   // Otherwise merge errors
   return {
     valid: false,
-    errors: concat(r1.errors, r2.errors), // intersection?
+    errors: concat(r1.errors, r2.errors),
     type: r1.type,
     items: mergeWith(mergeResults, r1Items, r2Items)
   };
