@@ -1,8 +1,83 @@
 import { expect } from 'chai';
 
-import { printVerbose } from '../src/lib/printer';
+import {
+  ok,
+  err,
+  isOK,
+  isErr,
+  mergeResults,
+  concatResults,
+  mapErrors,
+  allWhileOK,
+  all,
+  valStrLen,
+  valStrStartsWith,
+  valStr,
+  printVerbose,
+  getErrors
+} from '../src/lib/printer';
 
 describe.only('printer', () => {
+  describe.only('#', () => {
+    it(`constructs valid and invalid results`, () => {
+      expect(isOK(ok())).to.be.true;
+      expect(isOK(err('x', 'err'))).to.be.false;
+
+      expect(isErr(ok())).to.be.false;
+      expect(isErr(err('x', 'err'))).to.be.true;
+    });
+
+    it('merges two results', () => {
+      const r1 = ok();
+      const r2 = err('x', 'err1');
+      const r3 = err('x', 'err2');
+
+      const m1 = mergeResults(r1, r2);
+      expect(getErrors(m1)).to.deep.equal(['err1']);
+
+      const m2 = mergeResults(r2, r3);
+      expect(getErrors(m2)).to.deep.equal(['err1', 'err2']);
+    });
+
+    it('concats results', () => {
+      const r1 = ok();
+      const r2 = err('x', 'err1');
+      const r3 = err('x', 'err2');
+
+      expect(getErrors(concatResults([r1, r2, r3]))).to.deep.equal([
+        'err1',
+        'err2'
+      ]);
+
+      expect(getErrors(concatResults([ok(), ok()]))).to.deep.equal([]);
+    });
+
+    it('composes allWhileOK', () => {
+      const v = allWhileOK([valStrLen, valStrStartsWith('a')]);
+
+      expect(getErrors(v('xyz'))).to.deep.equal(['Length < 5']);
+      expect(getErrors(v('xyz123'))).to.deep.equal(['Expected a (got x)']);
+      expect(isOK(v('abc123'))).to.be.true;
+    });
+
+    it('composes all', () => {
+      const v = all([valStrLen, valStrStartsWith('a')]);
+
+      expect(getErrors(v('xyz'))).to.deep.equal([
+        'Length < 5',
+        'Expected a (got x)'
+      ]);
+
+      expect(isOK(v('abc123'))).to.be.true;
+    });
+
+    it('maps errors', () => {
+      const mapper = mapErrors(e => `*** ${e}`);
+      expect(getErrors(mapper(ok()))).to.deep.equal([]);
+      expect(getErrors(mapper(err('x', ['err'])))).to.deep.equal(['*** err']);
+    });
+  });
+
   describe('#printVerbose()', () => {
     it('should print an error', () => {
       const ast = {
