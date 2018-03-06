@@ -106,19 +106,19 @@ describe('compose', () => {
         validateObjPropHasType('string')('field1')
       ]);
 
-      expect(validate('not an object').errors).to.deep.equal([
+      expect(getErrors(validate('not an object'))).to.deep.equal([
         `"not an object" failed to typecheck (expected object)`
       ]);
 
-      expect(validate({}).errors).to.deep.equal([
+      expect(getErrors(validate({}))).to.deep.equal([
         `Missing required field "field1"`
       ]);
 
-      expect(validate({ field1: {} }).errors).to.deep.equal([
+      expect(getErrors(validate({ field1: {} }))).to.deep.equal([
         `Field \"field1\" failed to typecheck (expected string)`
       ]);
 
-      expect(validate({ field2: 'here' }).errors).to.deep.equal([
+      expect(getErrors(validate({ field2: 'here' }))).to.deep.equal([
         `Missing required field "field1"`
       ]);
     });
@@ -150,7 +150,7 @@ describe('compose', () => {
 
     it('returns errors from all the validators if it fails', () => {
       const validate = some([validateIsObject, validateIsArray]);
-      expect(validate(123).errors).to.deep.equal([
+      expect(getErrors(validate(123))).to.deep.equal([
         '"123" failed to typecheck (expected object)',
         '"123" failed to typecheck (expected array)'
       ]);
