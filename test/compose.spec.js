@@ -1,14 +1,15 @@
 import { expect } from 'chai';
 
 import { all, allWhileOK, some } from '../src/lib/compose';
-import { isOK, isErr, ok, err, toResult } from '../src/lib/result';
+import { isOK, isErr, ok, err } from '../src/lib/result';
+import { getErrors } from '../src/lib/printer';
 
 import {
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
   validateIsArray,
-  validateArrayItemsHaveType,
+  validateArrayItemsHaveType
 } from '../src/lib/validators';
 
 describe('compose', () => {
@@ -41,17 +42,17 @@ describe('compose', () => {
     it('runs the composed validators in order', () => {
       const validate = all([validateIsObject, validateObjHasKey('field1')]);
 
-      expect(validate('not an object').errors).to.deep.equal([
+      expect(getErrors(validate('not an object'))).to.deep.equal([
         `"not an object" failed to typecheck (expected object)`,
-        `Missing required field \"field1\"`,
+        `Missing required field \"field1\"`
       ]);
 
-      expect(validate({}).errors).to.deep.equal([
-        `Missing required field "field1"`,
+      expect(getErrors(validate({}))).to.deep.equal([
+        `Missing required field "field1"`
       ]);
 
-      expect(validate({ field2: 'here' }).errors).to.deep.equal([
-        `Missing required field "field1"`,
+      expect(getErrors(validate({ field2: 'here' }))).to.deep.equal([
+        `Missing required field "field1"`
       ]);
     });
 
@@ -59,7 +60,7 @@ describe('compose', () => {
       const arbitraryValidator = data =>
         data.hasOwnProperty('arbitraryField')
           ? ok()
-          : err([`Couldn't find arbitraryField`]);
+          : err(["Couldn't find arbitraryField"]);
 
       const validate = all([validateIsObject, arbitraryValidator]);
 
@@ -73,7 +74,7 @@ describe('compose', () => {
     it('should compose multiple validators into a single validator such that they all must succeed', () => {
       const validate = allWhileOK([
         validateIsObject,
-        validateObjHasKey('field1'),
+        validateObjHasKey('field1')
       ]);
 
       expect(isErr(validate('not an object'))).to.be.true;
@@ -102,23 +103,23 @@ describe('compose', () => {
       const validate = allWhileOK([
         validateIsObject,
         validateObjHasKey('field1'),
-        validateObjPropHasType('string')('field1'),
+        validateObjPropHasType('string')('field1')
       ]);
 
       expect(validate('not an object').errors).to.deep.equal([
-        `"not an object" failed to typecheck (expected object)`,
+        `"not an object" failed to typecheck (expected object)`
       ]);
 
       expect(validate({}).errors).to.deep.equal([
-        `Missing required field "field1"`,
+        `Missing required field "field1"`
       ]);
 
       expect(validate({ field1: {} }).errors).to.deep.equal([
-        `Field \"field1\" failed to typecheck (expected string)`,
+        `Field \"field1\" failed to typecheck (expected string)`
       ]);
 
       expect(validate({ field2: 'here' }).errors).to.deep.equal([
-        `Missing required field "field1"`,
+        `Missing required field "field1"`
       ]);
     });
 
@@ -151,7 +152,7 @@ describe('compose', () => {
       const validate = some([validateIsObject, validateIsArray]);
       expect(validate(123).errors).to.deep.equal([
         '"123" failed to typecheck (expected object)',
-        '"123" failed to typecheck (expected array)',
+        '"123" failed to typecheck (expected array)'
       ]);
     });
 

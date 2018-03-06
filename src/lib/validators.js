@@ -1,7 +1,7 @@
 // @flow
 
 import { isType } from './typecheck';
-import { ok, err, toResult, prefixErrors, flattenResults } from './result';
+import { ok, err, prefixErrors, concatResults } from './result';
 import type { Result, Errors } from './result';
 
 /**
@@ -108,13 +108,13 @@ export const validateIsArray: ValidateIsArray = validateIsType('array');
  */
 type ValidateArrayItemsHaveType = string => Validator;
 export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
-  prefixErrors(`Item `)(flattenResults(arr.map(validateIsType(type))));
+  prefixErrors(`Item `)(concatResults(arr.map(validateIsType(type))));
 
 /**
  * Does each array item pass the given validator?
  */
 type ValidateArrayItemsPass = Validator => Validator;
 export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
-  flattenResults(
+  concatResults(
     arr.map(v).map((res, i) => prefixErrors(`At item ${i}: `)(res))
   );

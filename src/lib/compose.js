@@ -1,6 +1,7 @@
 // @flow
+import { map, reduce } from 'ramda';
 
-import { isOK, ok, isErr, err, flattenResults } from './result';
+import { isOK, ok, isErr, err, concatResults, mergeResults } from './result';
 import type { Result } from './result';
 import type { Validator, Data } from './validators';
 
@@ -14,14 +15,14 @@ type Composer = (Array<Validator>) => Data => Result;
  * validators must succeed. Otherwise, returns the first set of errors
  */
 export const allWhileOK: Composer = validators => data =>
-  validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
+  reduce((res, v) => (isOK(res) ? v(data) : res), ok())(validators);
 
 /**
  * Run a series of validators such that all of the validators
  * must succeed. Otherwise, returns all of the errors
  */
 export const all: Composer = validators => data =>
-  flattenResults(validators.map(v => v(data)));
+  concatResults(map(v => v(data), validators));
 
 /**
  * Run a series of validators such that at least one of the validators must
@@ -31,5 +32,5 @@ export const some: Composer = validators => data =>
   validators.reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
-    return isErr(vRes) ? flattenResults([res, vRes]) : vRes;
+    return isErr(vRes) ? mergeResults(res, vRes) : vRes;
   }, err());

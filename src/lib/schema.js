@@ -11,11 +11,12 @@ import {
   validateArrayItemsHaveType,
   validateArrayItemsPass,
   alwaysOK,
-  alwaysErr,
+  alwaysErr
 } from './validators';
 
 import { all, allWhileOK } from './compose';
-import { type Result, isErr, err, mapErrors, getErrors } from './result';
+import { type Result, isErr, err, mapErrors } from './result';
+import { getErrors } from './printer';
 import { isObject } from './typecheck';
 
 /**
@@ -24,7 +25,7 @@ import { isObject } from './typecheck';
 type SchemaRules = {
   required?: boolean,
   type?: string,
-  validator?: Validator,
+  validator?: Validator
 };
 
 type ArraySchema = SchemaRules;
@@ -68,7 +69,7 @@ const validateAsNestedSchemaRules: ValidateAsNestedSchemaRules = field => schema
  */
 type ProcessSchemaError = Result => Array<Validator>;
 const processSchemaError: ProcessSchemaError = schemaResult => [
-  alwaysErr(getErrors(mapErrors(err => `Schema error: ${err}`)(schemaResult))),
+  alwaysErr(getErrors(mapErrors(err => `Schema error: ${err}`)(schemaResult)))
 ];
 
 /**
@@ -78,7 +79,7 @@ type ValidateAsObjectSchema = ObjectSchema => Result;
 export const validateAsObjectSchema: ValidateAsObjectSchema = schema =>
   allWhileOK([
     validateIsObject,
-    ...Object.keys(schema).map(validateAsNestedSchemaRules),
+    ...Object.keys(schema).map(validateAsNestedSchemaRules)
   ])(schema);
 
 /**
@@ -121,7 +122,7 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
     validateIsObject,
     all(requiredChecks),
     all(typeChecks),
-    all(validatorChecks),
+    all(validatorChecks)
   ];
 };
 
