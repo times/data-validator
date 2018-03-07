@@ -1,5 +1,5 @@
 // @flow
-import { mapObjIndexed as mapObj, map, flatten, concat, values } from 'ramda';
+import { concat, flatten, map, mapObjIndexed as mapObj, values } from 'ramda';
 
 import type { Result, Errors } from './result';
 

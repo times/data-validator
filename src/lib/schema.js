@@ -1,12 +1,14 @@
 // @flow
 import {
   append,
+  compose,
   filter,
   keys,
   map,
   mapObjIndexed as mapObj,
   prepend,
-  reduce
+  reduce,
+  unnest
 } from 'ramda';
 
 import {
@@ -76,27 +78,39 @@ const validateAsNestedSchemaRules: ValidateAsNestedSchemaRules = field => schema
 /**
  * Enforces a failed validation if the schema is invalid
  */
+const toList = x => [x];
+
 type ProcessSchemaError = Result => Array<Validator>;
-const processSchemaError: ProcessSchemaError = schemaResult => [
-  alwaysErr(getErrors(prefixErrors(`Schema error: `)(schemaResult)))
-];
+const processSchemaError: ProcessSchemaError = compose(
+  toList,
+  alwaysErr,
+  getErrors,
+  prefixErrors(`Schema error: `)
+);
 
 /**
  * Returns a result, having validated the supplied ObjectSchema
  */
+const applyTwice = f => x => f(x)(x);
+
 type ValidateAsObjectSchema = ObjectSchema => Result;
-export const validateAsObjectSchema: ValidateAsObjectSchema = schema =>
-  allWhileOK([
-    validateIsObject,
-    ...map(validateAsNestedSchemaRules, keys(schema))
-  ])(schema);
+export const validateAsObjectSchema: ValidateAsObjectSchema = applyTwice(
+  compose(
+    allWhileOK,
+    prepend(validateIsObject),
+    map(validateAsNestedSchemaRules),
+    keys
+  )
+);
 
 /**
  * Returns a result, having validated the supplied ArraySchema
  */
 type ValidateAsArraySchema = ArraySchema => Result;
-export const validateAsArraySchema: ValidateAsArraySchema = schema =>
-  allWhileOK([validateIsObject, validateAsSchemaRules])(schema);
+export const validateAsArraySchema: ValidateAsArraySchema = allWhileOK([
+  validateIsObject,
+  validateAsSchemaRules
+]);
 
 /**
  * Convert an object schema to an array of validators
@@ -180,12 +194,16 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
  * Precomposed helper for objects
  */
 type ObjectValidator = ObjectSchema => Validator;
-export const objectValidator: ObjectValidator = schema =>
-  allWhileOK(fromObjectSchemaStrict(schema));
+export const objectValidator: ObjectValidator = compose(
+  allWhileOK,
+  fromObjectSchemaStrict
+);
 
 /**
  * Precomposed helper for arrays
  */
 type ArrayValidator = ArraySchema => Validator;
-export const arrayValidator: ArrayValidator = schema =>
-  allWhileOK(fromArraySchema(schema));
+export const arrayValidator: ArrayValidator = compose(
+  allWhileOK,
+  fromArraySchema
+);

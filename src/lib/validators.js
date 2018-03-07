@@ -1,5 +1,5 @@
 // @flow
-import { addIndex, filter, keys, map } from 'ramda';
+import { addIndex, compose, curry, filter, keys, map } from 'ramda';
 
 import { isType } from './typecheck';
 import {
@@ -98,12 +98,12 @@ export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
  * Does the object have any fields not present in the schema?
  */
 type ValidateObjOnlyHasKeys = (Array<string>) => Validator;
-export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = requiredKeys => obj =>
-  concatResults(
-    map(
-      k => err([`Extra field "${k}"`]),
-      filter(k => !requiredKeys.includes(k), keys(obj))
-    )
+export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = requiredKeys =>
+  compose(
+    concatResults,
+    map(k => err([`Extra field "${k}"`])),
+    filter(k => !requiredKeys.includes(k)),
+    keys
   );
 
 /**
@@ -116,14 +116,18 @@ export const validateIsArray: ValidateIsArray = validateIsType('array');
  * Does each array item typecheck?
  */
 type ValidateArrayItemsHaveType = string => Validator;
-export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type => arr =>
-  prefixErrors(`Item `)(concatResults(map(validateIsType(type), arr)));
+export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type =>
+  compose(prefixErrors(`Item `), concatResults, map(validateIsType(type)));
 
 /**
  * Does each array item pass the given validator?
  */
+const mapI = curry(addIndex(map));
+
 type ValidateArrayItemsPass = Validator => Validator;
-export const validateArrayItemsPass: ValidateArrayItemsPass = v => arr =>
-  concatResults(
-    addIndex(map)((res, i) => prefixErrors(`At item ${i}: `)(res), map(v, arr))
+export const validateArrayItemsPass: ValidateArrayItemsPass = v =>
+  compose(
+    concatResults,
+    mapI((res, i) => prefixErrors(`At item ${i}: `)(res)),
+    map(v)
   );
