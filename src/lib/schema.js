@@ -1,5 +1,13 @@
 // @flow
-import { append, filter, keys, map, prepend } from 'ramda';
+import {
+  append,
+  filter,
+  keys,
+  map,
+  mapObjIndexed as mapObj,
+  prepend,
+  reduce
+} from 'ramda';
 
 import {
   type Validator,
@@ -16,7 +24,7 @@ import {
 } from './validators';
 
 import { all, allWhileOK } from './compose';
-import { type Result, isErr, err, mapErrors } from './result';
+import { type Result, isErr, err, prefixErrors } from './result';
 import { isObject } from './typecheck';
 import { getErrors } from './printer';
 
@@ -70,7 +78,7 @@ const validateAsNestedSchemaRules: ValidateAsNestedSchemaRules = field => schema
  */
 type ProcessSchemaError = Result => Array<Validator>;
 const processSchemaError: ProcessSchemaError = schemaResult => [
-  alwaysErr(getErrors(mapErrors(err => `Schema error: ${err}`)(schemaResult)))
+  alwaysErr(getErrors(prefixErrors(`Schema error: `)(schemaResult)))
 ];
 
 /**
@@ -103,23 +111,25 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 
   const requiredChecks = map(
     validateObjHasKey,
-    filter(k => schema[k].required, keys(schema))
+    filter(k => !!schema[k].required, keys(schema))
   );
 
-  const typeChecks = filter(
-    Boolean,
-    map(k => {
+  const typeChecks = reduce(
+    (acc, k) => {
       const type = schema[k].type;
-      return type ? validateObjPropHasType(type)(k) : null;
-    }, keys(schema))
+      return type ? append(validateObjPropHasType(type)(k), acc) : acc;
+    },
+    [],
+    keys(schema)
   );
 
-  const validatorChecks = filter(
-    Boolean,
-    map(k => {
+  const validatorChecks = reduce(
+    (acc, k) => {
       const validator = schema[k].validator;
-      return validator ? validateObjPropPasses(validator)(k) : null;
-    }, keys(schema))
+      return validator ? append(validateObjPropPasses(validator)(k), acc) : acc;
+    },
+    [],
+    keys(schema)
   );
 
   return [
@@ -151,15 +161,16 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
   const schemaResult = validateAsArraySchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
-  const vs = filter(
-    Boolean,
-    map(k => {
+  const vs = reduce(
+    (acc, k) => {
       if (k === 'type' && schema[k]) {
-        return validateArrayItemsHaveType(schema[k]);
+        return append(validateArrayItemsHaveType(schema[k]), acc);
       } else if (k === 'validator' && schema[k]) {
-        return validateArrayItemsPass(schema[k]);
-      } else return null;
-    }, keys(schema))
+        return append(validateArrayItemsPass(schema[k]), acc);
+      } else return acc;
+    },
+    [],
+    keys(schema)
   );
 
   return prepend(validateIsArray, vs);
