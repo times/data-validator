@@ -76,8 +76,8 @@ describe('printer', () => {
       };
 
       expect(printVerbose(ast)).to.deep.equal([
-        'At field a: error1',
-        'At field c: at field d: error2'
+        'At field "a": error1',
+        'At field "c": at field "d": error2'
       ]);
     });
 
@@ -122,8 +122,8 @@ describe('printer', () => {
       };
 
       expect(printVerbose(ast)).to.deep.equal([
-        'At field a: at field b: at item 0: error1',
-        'At field a: at field b: at item 1: at field d: error2'
+        'At field "a": at field "b": at item 0: error1',
+        'At field "a": at field "b": at item 1: at field "d": error2'
       ]);
     });
   });

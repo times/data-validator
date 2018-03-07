@@ -7,8 +7,7 @@ import {
   map,
   mapObjIndexed as mapObj,
   prepend,
-  reduce,
-  unnest
+  reduce
 } from 'ramda';
 
 import {

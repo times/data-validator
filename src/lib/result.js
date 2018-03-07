@@ -8,13 +8,15 @@ export type Errors = Array<string>;
 
 type OK = {| valid: true |};
 
+type Items = {
+  [string]: Result
+};
+
 type Err = {|
   valid: false,
   errors: Errors,
   type?: string,
-  items?: {
-    [string]: Result
-  }
+  items?: Items
 |};
 
 export type Result = OK | Err;
@@ -25,8 +27,11 @@ export type Result = OK | Err;
 type _ok = () => OK;
 export const ok: _ok = () => ({ valid: true });
 
-type _err = (errors?: Errors) => Result;
-export const err: _err = (errors = []) => ({ valid: false, errors });
+type _err = (errors?: Errors, type?: string, items?: Items) => Result;
+export const err: _err = (errors = [], type, items) =>
+  items && type
+    ? { valid: false, errors, type, items }
+    : { valid: false, errors };
 
 /**
  * Helpers

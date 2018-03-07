@@ -16,7 +16,7 @@ const printVerboseHelper: PrintVerboseHelper = isNested => ast => {
     const prefix =
       type === 'array'
         ? `${at} item ${key}: `
-        : type === 'object' ? `${at} field ${key}: ` : ``;
+        : type === 'object' ? `${at} field "${key}": ` : ``;
 
     return prefix + err;
   };

@@ -115,7 +115,7 @@ describe('compose', () => {
       ]);
 
       expect(getErrors(validate({ field1: {} }))).to.deep.equal([
-        `Field \"field1\" failed to typecheck (expected string)`
+        `At field \"field1\": {} failed to typecheck (expected string)`
       ]);
 
       expect(getErrors(validate({ field2: 'here' }))).to.deep.equal([

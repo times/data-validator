@@ -8,6 +8,8 @@ import {
   toResult,
   ok,
   err,
+  isOK,
+  isErr,
   prefixErrors,
   concatResults
 } from './result';
@@ -18,6 +20,13 @@ import {
 export type Data = any;
 
 export type Validator = Data => Result;
+
+// @TODO move these
+const buildObjRes = key => res =>
+  isOK(res) ? ok() : err([], 'object', { [key]: res });
+
+const buildArrayRes = idx => res =>
+  isOK(res) ? ok() : err([], 'array', { [idx]: res });
 
 /**
  * Always an error
@@ -80,9 +89,12 @@ export const validateObjHasKey: ValidateObjHasKey = key =>
 type ValidateObjPropHasType = string => string => Validator;
 export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-  return isType(type)(obj[key])
+  const val = obj[key];
+  const res = isType(type)(val)
     ? ok()
-    : err([`Field "${key}" failed to typecheck (expected ${type})`]);
+    : err([`${JSON.stringify(val)} failed to typecheck (expected ${type})`]);
+
+  return buildObjRes(key)(res);
 };
 
 /**
@@ -91,7 +103,7 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
 type ValidateObjPropPasses = Validator => string => Validator;
 export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-  return prefixErrors(`At field "${key}": `)(v(obj[key]));
+  return buildObjRes(key)(v(obj[key]));
 };
 
 /**
@@ -115,19 +127,19 @@ export const validateIsArray: ValidateIsArray = validateIsType('array');
 /**
  * Does each array item typecheck?
  */
+const mapI = curry(addIndex(map));
+
 type ValidateArrayItemsHaveType = string => Validator;
 export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type =>
-  compose(prefixErrors(`Item `), concatResults, map(validateIsType(type)));
+  compose(
+    concatResults,
+    mapI((res, i) => buildArrayRes(i)(res)),
+    map(validateIsType(type))
+  );
 
 /**
  * Does each array item pass the given validator?
  */
-const mapI = curry(addIndex(map));
-
 type ValidateArrayItemsPass = Validator => Validator;
 export const validateArrayItemsPass: ValidateArrayItemsPass = v =>
-  compose(
-    concatResults,
-    mapI((res, i) => prefixErrors(`At item ${i}: `)(res)),
-    map(v)
-  );
+  compose(concatResults, mapI((res, i) => buildArrayRes(i)(res)), map(v));
