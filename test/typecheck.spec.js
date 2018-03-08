@@ -4,7 +4,7 @@ import {
   isDate,
   isObject,
   isArray,
-  isType,
+  isType
 } from '../src/lib/typecheck';
 
 describe('typecheck', () => {
