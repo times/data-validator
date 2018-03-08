@@ -12,10 +12,10 @@ import {
 } from './result';
 
 /**
- * Types
+ * A Validator accepts some data, runs checks against it, and returns a result
+ * that is either OK or an Err
  */
 export type Data = any;
-
 export type Validator = Data => Result;
 
 // @TODO move these
@@ -26,19 +26,19 @@ const buildArrayRes = idx => res =>
   isOK(res) ? ok() : err([], 'array', { [idx]: res });
 
 /**
- * Always an error
+ * Always returns an Err with the given errors
  */
 type AlwaysErr = Errors => Validator;
 export const alwaysErr: AlwaysErr = errs => () => err(errs);
 
 /**
- * Always OK
+ * Always returns OK
  */
 type AlwaysOK = () => Validator;
 export const alwaysOK: AlwaysOK = () => () => ok();
 
 /**
- * Construct a validator from a boolean function
+ * Constructs a validator from a boolean function
  */
 type FromPredicate = ((Data) => boolean, (Data) => string) => Validator;
 export const fromPredicate: FromPredicate = (test, toErrMsg) => data =>

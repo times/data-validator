@@ -30,7 +30,11 @@ import { type Result, isErr, err, isOK, ok, concatResults } from './result';
 import { getErrors } from './printer';
 
 /**
- * Types
+ * Each field within a schema can optionally specify the following rules:
+ *
+ *  - required: Is the field required?
+ *  - type: What should the type of the field be?
+ *  - validator: A validator that should be applied to the field value
  */
 type SchemaRules = {
   required?: boolean,
@@ -38,7 +42,14 @@ type SchemaRules = {
   validator?: Validator
 };
 
+/**
+ * A ruleset for an array will apply to each of its item
+ */
 type ArraySchema = SchemaRules;
+
+/**
+ * A schema for an object should specify a ruleset for each field
+ */
 type ObjectSchema = { +[key: string]: SchemaRules };
 
 const toList = x => [x];
@@ -47,7 +58,7 @@ const buildObjRes = key => res =>
   isOK(res) ? ok() : err([], 'object', { [key]: res });
 
 /**
- * Convert a schema rule to a validator
+ * Converts an individual schema rule to a validator
  */
 type ConvertSchemaRuleToValidator = string => Validator;
 const convertSchemaRuleToValidator: ConvertSchemaRuleToValidator = key => {
@@ -64,7 +75,7 @@ const convertSchemaRuleToValidator: ConvertSchemaRuleToValidator = key => {
 };
 
 /**
- * Validates a set of schema rules as valid
+ * Validates that a set of schema rules are in the correct format
  */
 type ValidateAsSchemaRules = SchemaRules => Result;
 const validateAsSchemaRules: ValidateAsSchemaRules = rules => {
@@ -73,7 +84,8 @@ const validateAsSchemaRules: ValidateAsSchemaRules = rules => {
 };
 
 /**
- * Enforces a failed validation if the schema is invalid
+ * If an invalid schema was passed, prepends `Schema error:` to all the errors
+ * and then returns them in an `alwaysErr` validator
  */
 type ProcessSchemaError = Result => Array<Validator>;
 const processSchemaError: ProcessSchemaError = compose(
@@ -84,7 +96,7 @@ const processSchemaError: ProcessSchemaError = compose(
 );
 
 /**
- * Returns a result, having validated the supplied ObjectSchema
+ * Validates that an ObjectSchema is in the correct format
  */
 type ValidateAsObjectSchema = ObjectSchema => Result;
 export const validateAsObjectSchema: ValidateAsObjectSchema = schema => {
@@ -96,8 +108,9 @@ export const validateAsObjectSchema: ValidateAsObjectSchema = schema => {
 
   return allWhileOK([validateIsObject, validateFields])(schema);
 };
+
 /**
- * Returns a result, having validated the supplied ArraySchema
+ * Validates that an ArraySchema is in the correct format
  */
 type ValidateAsArraySchema = ArraySchema => Result;
 export const validateAsArraySchema: ValidateAsArraySchema = allWhileOK([
@@ -106,7 +119,8 @@ export const validateAsArraySchema: ValidateAsArraySchema = allWhileOK([
 ]);
 
 /**
- * Convert an object schema to an array of validators
+ * Given an ObjectSchema, checks its validity and then uses it to produce an
+ * array of validators that data can be run through
  */
 type FromObjectSchema = ObjectSchema => Array<Validator>;
 export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
@@ -145,13 +159,15 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 };
 
 /**
- * Convert an object schema to an array of validators and forbid extra fields
+ * Converts an ObjectSchema to an array of validators and additionally forbid
+ * extra fields
  */
 export const fromObjectSchemaStrict: FromObjectSchema = (schema = {}) =>
   append(validateObjOnlyHasKeys(keys(schema)), fromObjectSchema(schema));
 
 /**
- * Convert an array schema to an array of validators
+ * Given an ArraySchema, checks its validity and then uses it to produce an
+ * array of validators that data can be run through
  */
 type FromArraySchema = ArraySchema => Array<Validator>;
 export const fromArraySchema: FromArraySchema = (schema = {}) => {

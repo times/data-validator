@@ -3,12 +3,22 @@ import { concat, flatten, map, mapObjIndexed as mapObj, values } from 'ramda';
 
 import type { Result, Errors } from './result';
 
-// Verbose
-type PrintVerboseHelper = boolean => Result => Errors;
-const printVerboseHelper: PrintVerboseHelper = isNested => ast => {
-  if (ast.valid) return [];
+/**
+ * A Printer accepts a Result and "pretty prints" it, turning it into an array
+ * of formatted error messages
+ */
+type Printer = Result => Errors;
 
-  const { items = {}, errors, type } = ast;
+/**
+ * Print errors from a Result in a verbose format e.g.
+ *
+ *  `At item 0: at field "a": 123 failed to typecheck (expected string)`
+ */
+type PrintVerboseHelper = boolean => Printer;
+const printVerboseHelper: PrintVerboseHelper = isNested => result => {
+  if (result.valid) return [];
+
+  const { items = {}, errors, type } = result;
 
   const withPrefix = key => err => {
     const at = isNested ? 'at' : 'At';
@@ -29,9 +39,9 @@ const printVerboseHelper: PrintVerboseHelper = isNested => ast => {
   return concat(errors, flatten(values(nestedErrors)));
 };
 
-type PrintVerbose = Result => Errors;
-export const printVerbose: PrintVerbose = printVerboseHelper(false);
+export const printVerbose: Printer = printVerboseHelper(false);
 
-// Retrieve errors from a result
-type GetErrors = Result => Errors;
-export const getErrors: GetErrors = printVerbose;
+/**
+ * Alias of printVerbose
+ */
+export const getErrors: Printer = printVerbose;
