@@ -38,10 +38,11 @@ export const ok: _ok = () => ({ valid: true });
  */
 type _err = (errors?: string | Errors, type?: ErrType, items?: Items) => Result;
 export const err: _err = (errors = [], type, items) => {
-  const errorList = Array.isArray(errors) ? errors : [errors];
-  return items && type
-    ? { valid: false, errors: errorList, type, items }
-    : { valid: false, errors: errorList };
+  const result = {
+    valid: false,
+    errors: Array.isArray(errors) ? errors : [errors]
+  };
+  return items && type ? merge(result, { type, items }) : result;
 };
 
 /**
@@ -83,17 +84,18 @@ export const mergeResults: MergeResults = (r1, r2) => {
   if (r1.valid) return r2;
   if (r2.valid) return r1;
 
-  // @TODO this will cause an `items` key to exist where it didn't before
-  const r1Items = r1.items || {};
-  const r2Items = r2.items || {};
-
   // Otherwise merge the errors
-  return {
+  const result = {
     valid: false,
     errors: concat(r1.errors, r2.errors),
-    type: r1.type,
-    items: mergeWith(mergeResults, r1Items, r2Items)
+    type: r1.type
   };
+
+  return r1.items || r2.items
+    ? merge(result, {
+        items: mergeWith(mergeResults, r1.items || {}, r2.items || {})
+      })
+    : result;
 };
 
 /**
