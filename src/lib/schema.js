@@ -1,20 +1,11 @@
 // @flow
-import {
-  append,
-  compose,
-  filter,
-  keys,
-  map,
-  mapObjIndexed as mapObj,
-  prepend,
-  reduce,
-  values
-} from 'ramda';
+import { append, compose, filter, keys, map, prepend, reduce } from 'ramda';
 
 import {
   type Validator,
   validateIsObject,
   validateObjHasKey,
+  validateObjFields,
   validateObjPropHasType,
   validateObjPropPasses,
   validateObjOnlyHasKeys,
@@ -26,7 +17,7 @@ import {
 } from './validators';
 
 import { all, allWhileOK } from './compose';
-import { type Result, isErr, err, isOK, ok, concatResults } from './result';
+import { type Result, isErr } from './result';
 import { getErrors } from './printer';
 
 /**
@@ -51,11 +42,6 @@ type ArraySchema = SchemaRules;
  * A schema for an object should specify a ruleset for each field
  */
 type ObjectSchema = { +[key: string]: SchemaRules };
-
-const toList = x => [x];
-
-const buildObjRes = key => res =>
-  isOK(res) ? ok() : err([], 'object', { [key]: res });
 
 /**
  * Converts an individual schema rule to a validator
@@ -89,7 +75,7 @@ const validateAsSchemaRules: ValidateAsSchemaRules = rules => {
  */
 type ProcessSchemaError = Result => Array<Validator>;
 const processSchemaError: ProcessSchemaError = compose(
-  toList,
+  x => [x],
   alwaysErr,
   map(e => `Schema error: ${e}`),
   getErrors
@@ -99,15 +85,10 @@ const processSchemaError: ProcessSchemaError = compose(
  * Validates that an ObjectSchema is in the correct format
  */
 type ValidateAsObjectSchema = ObjectSchema => Result;
-export const validateAsObjectSchema: ValidateAsObjectSchema = schema => {
-  const validateFields = compose(
-    concatResults,
-    values,
-    mapObj((v, k) => buildObjRes(k)(validateAsSchemaRules(v)))
-  );
-
-  return allWhileOK([validateIsObject, validateFields])(schema);
-};
+export const validateAsObjectSchema: ValidateAsObjectSchema = allWhileOK([
+  validateIsObject,
+  validateObjFields(validateAsSchemaRules)
+]);
 
 /**
  * Validates that an ArraySchema is in the correct format

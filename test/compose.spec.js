@@ -150,8 +150,8 @@ describe('compose', () => {
     it('returns errors from all the validators if it fails', () => {
       const validate = some([validateIsObject, validateIsArray]);
       expect(getErrors(validate(123))).to.deep.equal([
-        '"123" failed to typecheck (expected object)',
-        '"123" failed to typecheck (expected array)'
+        '123 failed to typecheck (expected object)',
+        '123 failed to typecheck (expected array)'
       ]);
     });
 

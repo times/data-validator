@@ -68,7 +68,7 @@ describe('validators', () => {
       const res = validate(123);
       expect(isErr(res)).to.be.true;
       expect(getErrors(res)).to.deep.equal([
-        `"123" failed to typecheck (expected string)`
+        `123 failed to typecheck (expected string)`
       ]);
 
       expect(isErr(validateIsType('null')(true))).to.be.true;
@@ -191,7 +191,7 @@ describe('validators', () => {
       });
       expect(isErr(res1)).to.be.true;
       expect(getErrors(res1)).to.deep.equal([
-        `At field "field1": "123" failed to typecheck (expected array)`
+        `At field "field1": 123 failed to typecheck (expected array)`
       ]);
 
       const res2 = validateObjPropPasses(validateIsArray)('field1')({
@@ -278,13 +278,13 @@ describe('validators', () => {
       const res1 = validate([1, '2', '3']);
       expect(isErr(res1)).to.be.true;
       expect(getErrors(res1)).to.deep.equal([
-        `At item 0: "1" failed to typecheck (expected string)`
+        `At item 0: 1 failed to typecheck (expected string)`
       ]);
 
       const res2 = validate(['1', true]);
       expect(isErr(res2)).to.be.true;
       expect(getErrors(res2)).to.deep.equal([
-        `At item 1: "true" failed to typecheck (expected string)`
+        `At item 1: true failed to typecheck (expected string)`
       ]);
     });
 

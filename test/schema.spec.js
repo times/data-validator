@@ -277,7 +277,7 @@ describe('schema', () => {
       });
       const validate1 = all(vs1);
       expect(getErrors(validate1({ field1: 12345 }))).to.deep.equal([
-        `At field "field1": "12345" failed to typecheck (expected object)`
+        `At field "field1": 12345 failed to typecheck (expected object)`
       ]);
 
       // One level deeper
@@ -289,7 +289,7 @@ describe('schema', () => {
       const validate2 = all(vs2);
       expect(getErrors(validate2({ field2: { field1: 12345 } }))).to.deep.equal(
         [
-          `At field "field2": at field "field1": "12345" failed to typecheck (expected object)`
+          `At field "field2": at field "field1": 12345 failed to typecheck (expected object)`
         ]
       );
     });
@@ -450,7 +450,7 @@ describe('schema', () => {
       });
       const validate1 = all(vs1);
       expect(getErrors(validate1([{}, 1, {}]))).to.deep.equal([
-        `At item 1: "1" failed to typecheck (expected object)`
+        `At item 1: 1 failed to typecheck (expected object)`
       ]);
 
       // One level deeper
@@ -459,7 +459,7 @@ describe('schema', () => {
       });
       const validate2 = all(vs2);
       expect(getErrors(validate2([[{}], [1]]))).to.deep.equal([
-        `At item 1: at item 0: "1" failed to typecheck (expected object)`
+        `At item 1: at item 0: 1 failed to typecheck (expected object)`
       ]);
     });
 

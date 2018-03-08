@@ -1,5 +1,14 @@
 // @flow
-import { addIndex, compose, curry, filter, keys, map } from 'ramda';
+import {
+  addIndex,
+  compose,
+  curry,
+  filter,
+  keys,
+  map,
+  mapObjIndexed as mapObj,
+  values
+} from 'ramda';
 
 import { isType } from './typecheck';
 import {
@@ -17,13 +26,6 @@ import {
  */
 export type Data = any;
 export type Validator = Data => Result;
-
-// @TODO move these
-const buildObjRes = key => res =>
-  isOK(res) ? ok() : err([], 'object', { [key]: res });
-
-const buildArrayRes = idx => res =>
-  isOK(res) ? ok() : err([], 'array', { [idx]: res });
 
 /**
  * Always returns an Err with the given errors
@@ -51,7 +53,7 @@ type ValidateIsType = string => Validator;
 export const validateIsType: ValidateIsType = type =>
   fromPredicate(
     isType(type),
-    data => `"${data}" failed to typecheck (expected ${type})`
+    data => `${JSON.stringify(data)} failed to typecheck (expected ${type})`
   );
 
 /**
@@ -81,17 +83,27 @@ export const validateObjHasKey: ValidateObjHasKey = key =>
   );
 
 /**
+ * Runs every value in the object through the given validator and gathers the results
+ */
+type ValidateObjFields = Validator => Object => Result;
+export const validateObjFields: ValidateObjFields = validator =>
+  compose(
+    concatResults,
+    values,
+    mapObj((v, k) => {
+      const res = validator(v);
+      return isOK(res) ? ok() : err([], 'object', { [k]: res });
+    })
+  );
+
+/**
  * If the given object property exists, does it typecheck?
  */
 type ValidateObjPropHasType = string => string => Validator;
 export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-  const val = obj[key];
-  const res = isType(type)(val)
-    ? ok()
-    : err(`${JSON.stringify(val)} failed to typecheck (expected ${type})`);
-
-  return buildObjRes(key)(res);
+  const val = { [key]: obj[key] };
+  return validateObjFields(validateIsType(type))(val);
 };
 
 /**
@@ -100,7 +112,8 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
 type ValidateObjPropPasses = Validator => string => Validator;
 export const validateObjPropPasses: ValidateObjPropPasses = v => key => obj => {
   if (!obj.hasOwnProperty(key)) return ok();
-  return buildObjRes(key)(v(obj[key]));
+  const val = { [key]: obj[key] };
+  return validateObjFields(v)(val);
 };
 
 /**
@@ -122,21 +135,29 @@ type ValidateIsArray = Validator;
 export const validateIsArray: ValidateIsArray = validateIsType('array');
 
 /**
- * Does each array item typecheck?
+ * Runs every item in the array through the given validator and gathers the results
  */
-const mapI = curry(addIndex(map));
-
-type ValidateArrayItemsHaveType = string => Validator;
-export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = type =>
+type ValidateArrayItems = Validator => (Array<Data>) => Result;
+export const validateArrayItems: ValidateArrayItems = validator =>
   compose(
     concatResults,
-    mapI((res, i) => buildArrayRes(i)(res)),
-    map(validateIsType(type))
+    curry(addIndex(map))((d, i) => {
+      const res = validator(d);
+      return isOK(res) ? res : err([], 'array', { [i]: res });
+    })
   );
+
+/**
+ * Does each array item typecheck?
+ */
+type ValidateArrayItemsHaveType = string => Validator;
+export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = compose(
+  validateArrayItems,
+  validateIsType
+);
 
 /**
  * Does each array item pass the given validator?
  */
 type ValidateArrayItemsPass = Validator => Validator;
-export const validateArrayItemsPass: ValidateArrayItemsPass = v =>
-  compose(concatResults, mapI((res, i) => buildArrayRes(i)(res)), map(v));
+export const validateArrayItemsPass: ValidateArrayItemsPass = validateArrayItems;
