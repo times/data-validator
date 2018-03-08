@@ -5,12 +5,9 @@ import { isType } from './typecheck';
 import {
   type Result,
   type Errors,
-  toResult,
   ok,
   err,
   isOK,
-  isErr,
-  prefixErrors,
   concatResults
 } from './result';
 

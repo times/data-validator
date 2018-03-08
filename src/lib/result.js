@@ -42,11 +42,6 @@ export const isOK: IsOK = ({ valid }) => valid !== undefined && valid;
 type IsErr = Result => boolean;
 export const isErr: IsErr = ({ valid }) => valid !== undefined && !valid;
 
-// Convert a (possibly empty) array of errors into a Result
-type ToResult = Errors => Result;
-export const toResult: ToResult = errs =>
-  errs.length === 0 ? ok() : err(errs);
-
 // Apply a function to every error in a Result
 type MapErrors = ((string, ?number) => string) => Result => Result;
 export const mapErrors: MapErrors = f => r => {
@@ -61,11 +56,6 @@ export const mapErrors: MapErrors = f => r => {
     ? merge(withMappedErrors, { items: map(mapErrors(f), r.items) })
     : withMappedErrors;
 };
-
-// Prefix every error in a Result with the given string
-type PrefixErrors = string => Result => Result;
-export const prefixErrors: PrefixErrors = prefix =>
-  mapErrors(e => `${prefix}${e}`);
 
 // Combine two results
 type MergeResults = (Result, Result) => Result;

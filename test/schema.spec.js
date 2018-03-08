@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { addIndex, compose, map } from 'ramda';
 import {
   validateAsObjectSchema,
   validateAsArraySchema,
@@ -15,7 +16,7 @@ import {
   validateArrayItemsHaveType
 } from '../src/lib/validators';
 
-import { isOK, isErr, err, ok, toResult } from '../src/lib/result';
+import { isOK, isErr, err, ok, concatResults } from '../src/lib/result';
 import { all, allWhileOK } from '../src/lib/compose';
 import { getErrors } from '../src/lib/printer';
 
@@ -576,12 +577,17 @@ describe('schema', () => {
         type: 'string'
       };
 
-      const arbitraryValidator = data =>
-        toResult(
-          data
-            .filter(d => d.length < 10)
-            .map(item => `Item "${item}" not longer than 10 characters`)
-        );
+      const arbitraryValidator = compose(
+        concatResults,
+        addIndex(map)(
+          (x, i) =>
+            x.length < 10
+              ? err([], 'array', {
+                  [i]: err([`${x} not longer than 10 characters`])
+                })
+              : ok()
+        )
+      );
 
       const validate = allWhileOK([arrayValidator(schema), arbitraryValidator]);
 
@@ -596,7 +602,7 @@ describe('schema', () => {
       ).to.be.true;
       expect(
         getErrors(validate(['string-longer-than-ten-characters', 'too-short']))
-      ).to.deep.equal(['Item "too-short" not longer than 10 characters']);
+      ).to.deep.equal(['At item 1: too-short not longer than 10 characters']);
     });
   });
 });

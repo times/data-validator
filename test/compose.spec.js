@@ -8,8 +8,7 @@ import {
   validateIsObject,
   validateObjHasKey,
   validateObjPropHasType,
-  validateIsArray,
-  validateArrayItemsHaveType
+  validateIsArray
 } from '../src/lib/validators';
 
 describe('compose', () => {

@@ -1,15 +1,15 @@
 export { all, allWhileOK, some } from './lib/compose';
 
+export { printVerbose, getErrors } from './lib/printer';
+
 export {
   ok,
   err,
   isOK,
   isErr,
-  toResult,
   mapErrors,
-  prefixErrors,
-  flattenResults,
-  getErrors,
+  mergeResults,
+  concatResults
 } from './lib/result';
 
 export {
@@ -19,7 +19,7 @@ export {
   fromObjectSchemaStrict,
   fromArraySchema,
   objectValidator,
-  arrayValidator,
+  arrayValidator
 } from './lib/schema';
 
 export {
@@ -27,7 +27,8 @@ export {
   isDate,
   isObject,
   isArray,
-  isType,
+  isNull,
+  isType
 } from './lib/typecheck';
 
 export {
@@ -43,5 +44,5 @@ export {
   validateObjOnlyHasKeys,
   validateIsArray,
   validateArrayItemsHaveType,
-  validateArrayItemsPass,
+  validateArrayItemsPass
 } from './lib/validators';

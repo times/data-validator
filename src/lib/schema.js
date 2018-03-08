@@ -26,16 +26,7 @@ import {
 } from './validators';
 
 import { all, allWhileOK } from './compose';
-import {
-  type Result,
-  isErr,
-  err,
-  isOK,
-  ok,
-  prefixErrors,
-  concatResults
-} from './result';
-import { isObject } from './typecheck';
+import { type Result, isErr, err, isOK, ok, concatResults } from './result';
 import { getErrors } from './printer';
 
 /**
