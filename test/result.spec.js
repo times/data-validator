@@ -19,13 +19,19 @@ describe('result', () => {
   });
 
   describe('#err()', () => {
-    it('constructs an Err object', () => {
+    it('constructs an Err object from an array of errors', () => {
       expect(err()).to.deep.equal({ valid: false, errors: [] });
 
       expect(err(['err1', 'err2'])).to.deep.equal({
         valid: false,
         errors: ['err1', 'err2']
       });
+    });
+
+    it('constructs an Err object from a single error', () => {
+      expect(err()).to.deep.equal({ valid: false, errors: [] });
+
+      expect(err('err1')).to.deep.equal({ valid: false, errors: ['err1'] });
     });
   });
 
@@ -43,7 +49,7 @@ describe('result', () => {
   describe('#isErr()', () => {
     it('returns true only for an Err object', () => {
       expect(isErr(err())).to.be.true;
-      expect(isErr(err(['Error message']))).to.be.true;
+      expect(isErr(err('Error message'))).to.be.true;
 
       expect(isErr(ok())).to.be.false;
       expect(isErr({})).to.be.false;

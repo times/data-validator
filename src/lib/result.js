@@ -36,11 +36,13 @@ export const ok: _ok = () => ({ valid: true });
 /**
  * Constructs an Err result
  */
-type _err = (errors?: Errors, type?: ErrType, items?: Items) => Result;
-export const err: _err = (errors = [], type, items) =>
-  items && type
-    ? { valid: false, errors, type, items }
-    : { valid: false, errors };
+type _err = (errors?: string | Errors, type?: ErrType, items?: Items) => Result;
+export const err: _err = (errors = [], type, items) => {
+  const errorList = Array.isArray(errors) ? errors : [errors];
+  return items && type
+    ? { valid: false, errors: errorList, type, items }
+    : { valid: false, errors: errorList };
+};
 
 /**
  * Is the given result OK?

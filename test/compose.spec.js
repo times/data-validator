@@ -59,7 +59,7 @@ describe('compose', () => {
       const arbitraryValidator = data =>
         data.hasOwnProperty('arbitraryField')
           ? ok()
-          : err(["Couldn't find arbitraryField"]);
+          : err("Couldn't find arbitraryField");
 
       const validate = all([validateIsObject, arbitraryValidator]);
 
@@ -126,7 +126,7 @@ describe('compose', () => {
       const arbitraryValidator = data =>
         data.hasOwnProperty('arbitraryField')
           ? ok()
-          : err([`Couldn't find arbitraryField`]);
+          : err(`Couldn't find arbitraryField`);
 
       const validate = allWhileOK([validateIsObject, arbitraryValidator]);
 

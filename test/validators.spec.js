@@ -299,7 +299,7 @@ describe('validators', () => {
 
   describe('#validateArrayItemsPass()', () => {
     const validate = validateArrayItemsPass(
-      n => (n > 3 ? ok() : err([`${n} <= 3`]))
+      n => (n > 3 ? ok() : err(`${n} <= 3`))
     );
 
     it('should return an Err if any of the items fail the given validator', () => {

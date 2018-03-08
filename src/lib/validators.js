@@ -42,7 +42,7 @@ export const alwaysOK: AlwaysOK = () => () => ok();
  */
 type FromPredicate = ((Data) => boolean, (Data) => string) => Validator;
 export const fromPredicate: FromPredicate = (test, toErrMsg) => data =>
-  test(data) ? ok() : err([toErrMsg(data)]);
+  test(data) ? ok() : err(toErrMsg(data));
 
 /**
  * Is the given object of the given type?
@@ -89,7 +89,7 @@ export const validateObjPropHasType: ValidateObjPropHasType = type => key => obj
   const val = obj[key];
   const res = isType(type)(val)
     ? ok()
-    : err([`${JSON.stringify(val)} failed to typecheck (expected ${type})`]);
+    : err(`${JSON.stringify(val)} failed to typecheck (expected ${type})`);
 
   return buildObjRes(key)(res);
 };
@@ -110,7 +110,7 @@ type ValidateObjOnlyHasKeys = (Array<string>) => Validator;
 export const validateObjOnlyHasKeys: ValidateObjOnlyHasKeys = requiredKeys =>
   compose(
     concatResults,
-    map(k => err([`Extra field "${k}"`])),
+    map(k => err(`Extra field "${k}"`)),
     filter(k => !requiredKeys.includes(k)),
     keys
   );
