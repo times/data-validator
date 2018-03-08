@@ -7,7 +7,8 @@ import {
   map,
   mapObjIndexed as mapObj,
   prepend,
-  reduce
+  reduce,
+  values
 } from 'ramda';
 
 import {
@@ -25,7 +26,15 @@ import {
 } from './validators';
 
 import { all, allWhileOK } from './compose';
-import { type Result, isErr, err, prefixErrors } from './result';
+import {
+  type Result,
+  isErr,
+  err,
+  isOK,
+  ok,
+  prefixErrors,
+  concatResults
+} from './result';
 import { isObject } from './typecheck';
 import { getErrors } from './printer';
 
@@ -40,6 +49,11 @@ type SchemaRules = {
 
 type ArraySchema = SchemaRules;
 type ObjectSchema = { +[key: string]: SchemaRules };
+
+const toList = x => [x];
+
+const buildObjRes = key => res =>
+  isOK(res) ? ok() : err([], 'object', { [key]: res });
 
 /**
  * Convert a schema rule to a validator
@@ -68,40 +82,29 @@ const validateAsSchemaRules: ValidateAsSchemaRules = rules => {
 };
 
 /**
- * Validates a segment of an object schema as a valid set of schema rules
- */
-type ValidateAsNestedSchemaRules = string => SchemaRules => Result;
-const validateAsNestedSchemaRules: ValidateAsNestedSchemaRules = field => schema =>
-  validateAsSchemaRules(schema[field]);
-
-/**
  * Enforces a failed validation if the schema is invalid
  */
-const toList = x => [x];
-
 type ProcessSchemaError = Result => Array<Validator>;
 const processSchemaError: ProcessSchemaError = compose(
   toList,
   alwaysErr,
-  getErrors,
-  prefixErrors(`Schema error: `)
+  map(e => `Schema error: ${e}`),
+  getErrors
 );
 
 /**
  * Returns a result, having validated the supplied ObjectSchema
  */
-const applyTwice = f => x => f(x)(x);
-
 type ValidateAsObjectSchema = ObjectSchema => Result;
-export const validateAsObjectSchema: ValidateAsObjectSchema = applyTwice(
-  compose(
-    allWhileOK,
-    prepend(validateIsObject),
-    map(validateAsNestedSchemaRules),
-    keys
-  )
-);
+export const validateAsObjectSchema: ValidateAsObjectSchema = schema => {
+  const validateFields = compose(
+    concatResults,
+    values,
+    mapObj((v, k) => buildObjRes(k)(validateAsSchemaRules(v)))
+  );
 
+  return allWhileOK([validateIsObject, validateFields])(schema);
+};
 /**
  * Returns a result, having validated the supplied ArraySchema
  */
@@ -116,9 +119,6 @@ export const validateAsArraySchema: ValidateAsArraySchema = allWhileOK([
  */
 type FromObjectSchema = ObjectSchema => Array<Validator>;
 export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
-  if (!isObject(schema))
-    return processSchemaError(err(['Schemas must be objects']));
-
   const schemaResult = validateAsObjectSchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 
@@ -156,21 +156,14 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
 /**
  * Convert an object schema to an array of validators and forbid extra fields
  */
-export const fromObjectSchemaStrict: FromObjectSchema = (schema = {}) => {
-  const vs = fromObjectSchema(schema);
-  return isObject(schema)
-    ? append(validateObjOnlyHasKeys(keys(schema)), vs)
-    : vs;
-};
+export const fromObjectSchemaStrict: FromObjectSchema = (schema = {}) =>
+  append(validateObjOnlyHasKeys(keys(schema)), fromObjectSchema(schema));
 
 /**
  * Convert an array schema to an array of validators
  */
 type FromArraySchema = ArraySchema => Array<Validator>;
 export const fromArraySchema: FromArraySchema = (schema = {}) => {
-  if (!isObject(schema))
-    return processSchemaError(err(['Schemas must be objects']));
-
   const schemaResult = validateAsArraySchema(schema);
   if (isErr(schemaResult)) return processSchemaError(schemaResult);
 

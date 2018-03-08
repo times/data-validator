@@ -52,7 +52,8 @@ describe('schema', () => {
 
       expect(isErr(invalidSchema1)).to.be.true;
       expect(getErrors(invalidSchema1)).to.deep.equal([
-        `At field "required": "not-a-boolean" failed to typecheck (expected boolean)`
+        `At field "field1": at field "required": "not-a-boolean" failed to typecheck (expected boolean)`,
+        `At field "field2": at field "type": 1234 failed to typecheck (expected string)`
       ]);
     });
   });
@@ -82,7 +83,7 @@ describe('schema', () => {
     });
   });
 
-  describe.only('#fromObjectSchema()', () => {
+  describe('#fromObjectSchema()', () => {
     it('should handle cases where no schema is passed', () => {
       const vs = fromObjectSchema();
       expect(vs.length).to.equal(4);
@@ -103,7 +104,8 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = all(vs);
-      const errMsg = 'Schema error: Schemas must be objects';
+      const errMsg =
+        'Schema error: "string" failed to typecheck (expected object)';
 
       expect(getErrors(validate('string'))).to.deep.equal([errMsg]);
       expect(getErrors(validate({}))).to.deep.equal([errMsg]);
@@ -115,8 +117,7 @@ describe('schema', () => {
         field1: 'test-1234',
         field2: {
           required: true
-        },
-        field3: 'something'
+        }
       });
 
       expect(vs.length).to.equal(1);
@@ -177,7 +178,7 @@ describe('schema', () => {
       expect(isErr(validate('string'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
       expect(getErrors(validate({}))).to.deep.equal([
-        `Schema error: At field "field1": at field "validator": "{ not: 'a', function: true }" failed to typecheck (expected function)`
+        `Schema error: At field "field1": at field "validator": {"not":"a","function":true} failed to typecheck (expected function)`
       ]);
     });
 
@@ -319,16 +320,27 @@ describe('schema', () => {
       expect(vs.length).to.equal(5);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `"string" failed to typecheck (expected object)`
+      ]);
+
       expect(isOK(validate({}))).to.be.true;
     });
 
     it('should handle cases where the schema is not an object', () => {
       const vs = fromObjectSchemaStrict('string');
-      expect(vs.length).to.equal(1);
+      expect(vs.length).to.equal(2);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `Schema error: "string" failed to typecheck (expected object)`
+      ]);
+
       expect(isErr(validate({}))).to.be.true;
     });
 
@@ -342,8 +354,9 @@ describe('schema', () => {
       });
       const validate2 = all(vs2);
 
-      expect(isErr(validate2({ field1: 'xxx', field2: 123, field3: 'yyy' }))).to
-        .be.true;
+      const result = validate2({ field1: 'xxx', field2: 123, field3: 'yyy' });
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([`Extra field "field3"`]);
     });
   });
 
@@ -353,7 +366,13 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `"string" failed to typecheck (expected array)`
+      ]);
+
       expect(isOK(validate([]))).to.be.true;
     });
 
@@ -362,11 +381,11 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isErr(validate([]))).to.be.true;
 
-      expect(getErrors(validate([]))).to.deep.equal([
-        'Schema error: Schemas must be objects'
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `Schema error: "string" failed to typecheck (expected object)`
       ]);
     });
 
@@ -377,10 +396,11 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = allWhileOK(vs);
-      expect(isErr(validate([]))).to.be.true;
 
-      expect(getErrors(validate([]))).to.deep.equal([
-        'Schema error: Field "type" failed to typecheck (expected string)'
+      const result = validate([]);
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        'Schema error: At field "type": 12345 failed to typecheck (expected string)'
       ]);
     });
 
@@ -394,7 +414,7 @@ describe('schema', () => {
       expect(isErr(validate([]))).to.be.true;
 
       expect(getErrors(validate([]))).to.deep.equal([
-        'Schema error: Field "validator" failed to typecheck (expected function)'
+        'Schema error: At field "validator": {"not":"a","function":true} failed to typecheck (expected function)'
       ]);
     });
 
