@@ -1,7 +1,7 @@
 // @flow
 import { map, reduce } from 'ramda';
 
-import { isOK, ok, isErr, err, concatResults, mergeResults } from './result';
+import { concatResults, err, isOK, ok, mergeResults } from './result';
 import type { Result } from './result';
 import type { Validator, Data } from './validators';
 
@@ -33,5 +33,5 @@ export const some: Composer = validators => data =>
   reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
-    return isErr(vRes) ? mergeResults(res, vRes) : vRes;
+    return isOK(vRes) ? vRes : mergeResults(res, vRes);
   }, err())(validators);

@@ -1,3 +1,4 @@
+// @flow
 export { all, allWhileOK, some } from './lib/compose';
 
 export { printVerbose, getErrors } from './lib/printer';
@@ -39,10 +40,12 @@ export {
   validateIsIn,
   validateIsObject,
   validateObjHasKey,
+  validateObjFields,
   validateObjPropHasType,
   validateObjPropPasses,
   validateObjOnlyHasKeys,
   validateIsArray,
+  validateArrayItems,
   validateArrayItemsHaveType,
   validateArrayItemsPass
 } from './lib/validators';
