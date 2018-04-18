@@ -9,6 +9,7 @@ import {
   validateIsIn,
   validateIsObject,
   validateObjHasKey,
+  validateObjFields,
   validateObjPropHasType,
   validateObjPropPasses,
   validateObjOnlyHasKeys,
@@ -142,6 +143,23 @@ describe('validators', () => {
     });
   });
 
+  describe('#validateObjFields()', () => {
+    const validate = validateObjFields(
+      fromPredicate(n => n === 5, n => `${n} != 5`)
+    );
+
+    it('should return an Err if any object fields do not pass the validator', () => {
+      const res = validate({ a: 1, b: 5 });
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal(['At field "a": 1 != 5']);
+    });
+
+    it('should return an OK if all the object fields pass the validator', () => {
+      const res = validate({ a: 5, b: 5 });
+      expect(isOK(res)).to.be.true;
+    });
+  });
+
   describe('#validateObjPropHasType()', () => {
     it('should return an Err when the given data has fields that do not typecheck', () => {
       const res1 = validateObjPropHasType('string')('field1')({
@@ -271,6 +289,24 @@ describe('validators', () => {
     });
   });
 
+  describe('#validateArrayItems()', () => {
+    const validate = validateArrayItems(n => (n > 3 ? ok() : err(`${n} <= 3`)));
+
+    it('should return an Err if any of the items fail the given validator', () => {
+      const res = validate([2, 3, 4]);
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal([
+        `At item 0: 2 <= 3`,
+        `At item 1: 3 <= 3`,
+      ]);
+    });
+
+    it('should return OK if all the items pass the given validator', () => {
+      const res = validate([4, 5, 6]);
+      expect(isOK(res)).to.be.true;
+    });
+  });
+
   describe('#validateArrayItemsHaveType()', () => {
     it('should return an Err when the given array has items that do not typecheck', () => {
       const validate = validateArrayItemsHaveType('string');
@@ -294,24 +330,6 @@ describe('validators', () => {
       const res = validate(['1', '2']);
       expect(isOK(res)).to.be.true;
       expect(getErrors(res)).to.deep.equal([]);
-    });
-  });
-
-  describe('#validateArrayItems()', () => {
-    const validate = validateArrayItems(n => (n > 3 ? ok() : err(`${n} <= 3`)));
-
-    it('should return an Err if any of the items fail the given validator', () => {
-      const res = validate([2, 3, 4]);
-      expect(isErr(res)).to.be.true;
-      expect(getErrors(res)).to.deep.equal([
-        `At item 0: 2 <= 3`,
-        `At item 1: 3 <= 3`,
-      ]);
-    });
-
-    it('should return OK if all the items pass the given validator', () => {
-      const res = validate([4, 5, 6]);
-      expect(isOK(res)).to.be.true;
     });
   });
 });

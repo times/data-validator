@@ -104,7 +104,7 @@ export const mergeResults: MergeResults = (r1, r2) => {
   const result = {
     valid: false,
     errors: concat(r1.errors, r2.errors),
-    type: r1.type,
+    type: r1.type || r2.type,
   };
 
   return r1.items || r2.items

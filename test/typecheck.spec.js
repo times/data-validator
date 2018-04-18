@@ -4,7 +4,8 @@ import {
   isDate,
   isObject,
   isArray,
-  isType
+  isNull,
+  isType,
 } from '../src/lib/typecheck';
 
 describe('typecheck', () => {
@@ -82,6 +83,21 @@ describe('typecheck', () => {
     it('should succeed for arrays', () => {
       expect(isArray([])).to.be.true;
       expect(isArray([[]])).to.be.true;
+    });
+  });
+
+  describe('#isNull()', () => {
+    it('should fail for non-null values', () => {
+      expect(isNull()).to.be.false;
+      expect(isNull(2)).to.be.false;
+      expect(isNull(undefined)).to.be.false;
+      expect(isNull({})).to.be.false;
+      expect(isNull('[]')).to.be.false;
+      expect(isNull('not an array')).to.be.false;
+    });
+
+    it('should succeed for null values', () => {
+      expect(isNull(null)).to.be.true;
     });
   });
 

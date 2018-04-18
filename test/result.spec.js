@@ -100,13 +100,31 @@ describe('result', () => {
     });
 
     it('should merge two Errs into an Err', () => {
-      const res = mergeResults(err(['a']), err(['b']));
+      const res = mergeResults(err('a'), err('b'));
       expect(isErr(res)).to.be.true;
       expect(getErrors(res)).to.deep.equal(['a', 'b']);
     });
 
+    it('should merge nested Errs into an Err', () => {
+      const res = mergeResults(
+        nestedErr('object', { a: err('a') }),
+        nestedErr('object', { b: err('b') })
+      );
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal([
+        'At field "a": a',
+        'At field "b": b',
+      ]);
+    });
+
+    it('should merge a non-nested Err with a nested Err into an Err', () => {
+      const res = mergeResults(nestedErr('object', { b: err('b') }), err('a'));
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal(['a', 'At field "b": b']);
+    });
+
     it('should merge an OK and an Err into an Err', () => {
-      const res = mergeResults(err(['a']), ok());
+      const res = mergeResults(err('a'), ok());
       expect(isErr(res)).to.be.true;
       expect(getErrors(res)).to.deep.equal(['a']);
     });
