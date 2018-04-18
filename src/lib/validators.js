@@ -7,7 +7,7 @@ import {
   keys,
   map,
   mapObjIndexed as mapObj,
-  values
+  values,
 } from 'ramda';
 
 import { isType } from './typecheck';
@@ -16,8 +16,9 @@ import {
   type Errors,
   ok,
   err,
+  nestedErr,
   isOK,
-  concatResults
+  concatResults,
 } from './result';
 
 /**
@@ -92,7 +93,7 @@ export const validateObjFields: ValidateObjFields = validator =>
     values,
     mapObj((v, k) => {
       const res = validator(v);
-      return isOK(res) ? ok() : err([], 'object', { [k]: res });
+      return isOK(res) ? ok() : nestedErr('object', { [k]: res });
     })
   );
 
@@ -143,7 +144,7 @@ export const validateArrayItems: ValidateArrayItems = validator =>
     concatResults,
     curry(addIndex(map))((d, i) => {
       const res = validator(d);
-      return isOK(res) ? res : err([], 'array', { [i]: res });
+      return isOK(res) ? res : nestedErr('array', { [i]: res });
     })
   );
 

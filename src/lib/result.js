@@ -13,7 +13,7 @@ export type Errors = Array<string>;
 type OK = {| valid: true |};
 
 type Items = {
-  [string]: Result
+  [string]: Result,
 };
 
 type ErrType = 'array' | 'object';
@@ -22,7 +22,7 @@ type Err = {|
   valid: false,
   errors: Errors,
   type?: ErrType,
-  items?: Items
+  items?: Items,
 |};
 
 export type Result = OK | Err;
@@ -36,26 +36,34 @@ export const ok: _ok = () => ({ valid: true });
 /**
  * Constructs an Err result
  */
-type _err = (errors?: string | Errors, type?: ErrType, items?: Items) => Result;
-export const err: _err = (errors = [], type, items) => {
-  const result = {
-    valid: false,
-    errors: Array.isArray(errors) ? errors : [errors]
-  };
-  return items && type ? merge(result, { type, items }) : result;
-};
+type _err = (errors?: string | Errors) => Result;
+export const err: _err = (errors = []) => ({
+  valid: false,
+  errors: Array.isArray(errors) ? errors : [errors],
+});
+
+/**
+ * Constructs an Err result with nested errors
+ */
+type NestedErr = (ErrType, Items) => Result;
+export const nestedErr: NestedErr = (type, items) => ({
+  valid: false,
+  errors: [],
+  type,
+  items,
+});
 
 /**
  * Is the given result OK?
  */
 type IsOK = Result => boolean;
-export const isOK: IsOK = ({ valid }) => valid !== undefined && valid;
+export const isOK: IsOK = ({ valid }) => valid === true;
 
 /**
  * Is the given result an Err?
  */
 type IsErr = Result => boolean;
-export const isErr: IsErr = ({ valid }) => valid !== undefined && !valid;
+export const isErr: IsErr = ({ valid }) => valid === false;
 
 /**
  * Applies a function to every error in a Result
@@ -66,7 +74,7 @@ export const mapErrors: MapErrors = f => r => {
 
   const withMappedErrors = {
     valid: false,
-    errors: addIndex(map)(f, r.errors)
+    errors: addIndex(map)(f, r.errors),
   };
 
   return r.items
@@ -88,12 +96,12 @@ export const mergeResults: MergeResults = (r1, r2) => {
   const result = {
     valid: false,
     errors: concat(r1.errors, r2.errors),
-    type: r1.type
+    type: r1.type,
   };
 
   return r1.items || r2.items
     ? merge(result, {
-        items: mergeWith(mergeResults, r1.items || {}, r2.items || {})
+        items: mergeWith(mergeResults, r1.items || {}, r2.items || {}),
       })
     : result;
 };
