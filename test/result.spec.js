@@ -2,11 +2,12 @@ import { expect } from 'chai';
 import {
   ok,
   err,
+  nestedErr,
   isOK,
   isErr,
   mapErrors,
   mergeResults,
-  concatResults
+  concatResults,
 } from '../src/lib/result';
 
 import { getErrors } from '../src/lib/printer';
@@ -19,19 +20,30 @@ describe('result', () => {
   });
 
   describe('#err()', () => {
-    it('constructs an Err object from an array of errors', () => {
+    it('does not require an error', () => {
       expect(err()).to.deep.equal({ valid: false, errors: [] });
+    });
 
+    it('constructs an Err object from an array of errors', () => {
       expect(err(['err1', 'err2'])).to.deep.equal({
         valid: false,
-        errors: ['err1', 'err2']
+        errors: ['err1', 'err2'],
       });
     });
 
     it('constructs an Err object from a single error', () => {
-      expect(err()).to.deep.equal({ valid: false, errors: [] });
-
       expect(err('err1')).to.deep.equal({ valid: false, errors: ['err1'] });
+    });
+  });
+
+  describe('#nestedErr()', () => {
+    it('constructs an Err object with nested errors', () => {
+      expect(nestedErr('object', { a: 'err1' })).to.deep.equal({
+        valid: false,
+        errors: [],
+        type: 'object',
+        items: { a: 'err1' },
+      });
     });
   });
 
@@ -66,11 +78,18 @@ describe('result', () => {
       expect(isErr(map(err())));
     });
 
-    it('should apply a function to each error in a Result', () => {
+    it('should apply a function to each top-level error in a Result', () => {
       const map = mapErrors((e, i) => `${i + 1}. ${e}`);
       const res = err(['a', 'b', 'c']);
 
       expect(getErrors(map(res))).to.deep.equal(['1. a', '2. b', '3. c']);
+    });
+
+    it('should apply a function to each nested item in a Result', () => {
+      const map = mapErrors(e => `got ${e}`);
+      const res = nestedErr('object', { a: err('a'), b: ok(), c: err('c') });
+
+      expect(getErrors(map(res))).to.deep.equal(['got a', 'got c']);
     });
   });
 

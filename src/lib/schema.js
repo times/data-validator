@@ -11,9 +11,9 @@ import {
   validateObjOnlyHasKeys,
   validateIsArray,
   validateArrayItemsHaveType,
-  validateArrayItemsPass,
+  validateArrayItems,
   alwaysOK,
-  alwaysErr
+  alwaysErr,
 } from './validators';
 
 import { all, allWhileOK } from './compose';
@@ -30,7 +30,7 @@ import { getErrors } from './printer';
 type SchemaRules = {
   required?: boolean,
   type?: string,
-  validator?: Validator
+  validator?: Validator,
 };
 
 /**
@@ -87,7 +87,7 @@ const processSchemaError: ProcessSchemaError = compose(
 type ValidateAsObjectSchema = ObjectSchema => Result;
 export const validateAsObjectSchema: ValidateAsObjectSchema = allWhileOK([
   validateIsObject,
-  validateObjFields(validateAsSchemaRules)
+  validateObjFields(validateAsSchemaRules),
 ]);
 
 /**
@@ -96,7 +96,7 @@ export const validateAsObjectSchema: ValidateAsObjectSchema = allWhileOK([
 type ValidateAsArraySchema = ArraySchema => Result;
 export const validateAsArraySchema: ValidateAsArraySchema = allWhileOK([
   validateIsObject,
-  validateAsSchemaRules
+  validateAsSchemaRules,
 ]);
 
 /**
@@ -135,7 +135,7 @@ export const fromObjectSchema: FromObjectSchema = (schema = {}) => {
     validateIsObject,
     all(requiredChecks),
     all(typeChecks),
-    all(validatorChecks)
+    all(validatorChecks),
   ];
 };
 
@@ -160,7 +160,7 @@ export const fromArraySchema: FromArraySchema = (schema = {}) => {
       if (k === 'type' && schema[k]) {
         return append(validateArrayItemsHaveType(schema[k]), acc);
       } else if (k === 'validator' && schema[k]) {
-        return append(validateArrayItemsPass(schema[k]), acc);
+        return append(validateArrayItems(schema[k]), acc);
       } else return acc;
     },
     [],

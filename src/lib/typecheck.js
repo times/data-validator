@@ -6,9 +6,9 @@
  * Ref: http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime
  */
 type IsISOString = any => boolean;
-export const isISOString: IsISOString = str =>
-  typeof str === 'string' &&
-  str.match(
+export const isISOString: IsISOString = val =>
+  typeof val === 'string' &&
+  val.match(
     /^\d{4}(-\d\d(-\d\d(T\d\d:\d\d(:\d\d)?(\.\d+)?(([+-]\d\d:\d\d)|Z)?)?)?)?$/i
   ) !== null;
 
@@ -29,7 +29,7 @@ export const isObject: IsObject = val =>
  * Is the parameter an array?
  */
 type IsArray = any => boolean;
-export const isArray: IsArray = arr => Array.isArray(arr);
+export const isArray: IsArray = val => Array.isArray(val);
 
 /**
  * Is the parameter null?

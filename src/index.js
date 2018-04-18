@@ -10,7 +10,7 @@ export {
   isErr,
   mapErrors,
   mergeResults,
-  concatResults
+  concatResults,
 } from './lib/result';
 
 export {
@@ -20,7 +20,7 @@ export {
   fromObjectSchemaStrict,
   fromArraySchema,
   objectValidator,
-  arrayValidator
+  arrayValidator,
 } from './lib/schema';
 
 export {
@@ -29,7 +29,7 @@ export {
   isObject,
   isArray,
   isNull,
-  isType
+  isType,
 } from './lib/typecheck';
 
 export {
@@ -47,5 +47,4 @@ export {
   validateIsArray,
   validateArrayItems,
   validateArrayItemsHaveType,
-  validateArrayItemsPass
 } from './lib/validators';

@@ -1,5 +1,13 @@
 // @flow
-import { addIndex, concat, map, merge, mergeWith, reduce } from 'ramda';
+import {
+  addIndex,
+  concat,
+  map,
+  mapObjIndexed as mapObj,
+  merge,
+  mergeWith,
+  reduce,
+} from 'ramda';
 
 /**
  * Error messages are represented as strings
@@ -68,7 +76,7 @@ export const isErr: IsErr = ({ valid }) => valid === false;
 /**
  * Applies a function to every error in a Result
  */
-type MapErrors = ((string, ?number) => string) => Result => Result;
+type MapErrors = ((string, number) => string) => Result => Result;
 export const mapErrors: MapErrors = f => r => {
   if (r.valid) return r;
 
@@ -78,7 +86,7 @@ export const mapErrors: MapErrors = f => r => {
   };
 
   return r.items
-    ? merge(withMappedErrors, { items: map(mapErrors(f), r.items) })
+    ? merge(withMappedErrors, { items: mapObj(mapErrors(f), r.items) })
     : withMappedErrors;
 };
 

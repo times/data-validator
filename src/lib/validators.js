@@ -156,9 +156,3 @@ export const validateArrayItemsHaveType: ValidateArrayItemsHaveType = compose(
   validateArrayItems,
   validateIsType
 );
-
-/**
- * Does each array item pass the given validator?
- */
-type ValidateArrayItemsPass = Validator => Validator;
-export const validateArrayItemsPass: ValidateArrayItemsPass = validateArrayItems;
