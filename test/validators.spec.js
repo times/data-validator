@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { isOK, isErr, ok, err, getErrors } from '../src/lib/result';
+import { getErrors } from '../src/lib/printer';
+import { isOK, isErr, ok, err } from '../src/lib/result';
 import {
   alwaysErr,
   alwaysOK,
@@ -8,12 +9,13 @@ import {
   validateIsIn,
   validateIsObject,
   validateObjHasKey,
+  validateObjFields,
   validateObjPropHasType,
   validateObjPropPasses,
   validateObjOnlyHasKeys,
   validateIsArray,
+  validateArrayItems,
   validateArrayItemsHaveType,
-  validateArrayItemsPass,
 } from '../src/lib/validators';
 
 describe('validators', () => {
@@ -67,7 +69,7 @@ describe('validators', () => {
       const res = validate(123);
       expect(isErr(res)).to.be.true;
       expect(getErrors(res)).to.deep.equal([
-        `"123" failed to typecheck (expected string)`,
+        `123 failed to typecheck (expected string)`,
       ]);
 
       expect(isErr(validateIsType('null')(true))).to.be.true;
@@ -141,6 +143,23 @@ describe('validators', () => {
     });
   });
 
+  describe('#validateObjFields()', () => {
+    const validate = validateObjFields(
+      fromPredicate(n => n === 5, n => `${n} != 5`)
+    );
+
+    it('should return an Err if any object fields do not pass the validator', () => {
+      const res = validate({ a: 1, b: 5 });
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal(['At field "a": 1 != 5']);
+    });
+
+    it('should return an OK if all the object fields pass the validator', () => {
+      const res = validate({ a: 5, b: 5 });
+      expect(isOK(res)).to.be.true;
+    });
+  });
+
   describe('#validateObjPropHasType()', () => {
     it('should return an Err when the given data has fields that do not typecheck', () => {
       const res1 = validateObjPropHasType('string')('field1')({
@@ -148,7 +167,7 @@ describe('validators', () => {
       });
       expect(isErr(res1)).to.be.true;
       expect(getErrors(res1)).to.deep.equal([
-        `Field "field1" failed to typecheck (expected string)`,
+        `At field "field1": 123 failed to typecheck (expected string)`,
       ]);
 
       const res2 = validateObjPropHasType('number')('field2')({
@@ -157,7 +176,7 @@ describe('validators', () => {
       });
       expect(isErr(res2)).to.be.true;
       expect(getErrors(res2)).to.deep.equal([
-        `Field "field2" failed to typecheck (expected number)`,
+        `At field "field2": "not a number" failed to typecheck (expected number)`,
       ]);
     });
 
@@ -190,7 +209,7 @@ describe('validators', () => {
       });
       expect(isErr(res1)).to.be.true;
       expect(getErrors(res1)).to.deep.equal([
-        `At field "field1": "123" failed to typecheck (expected array)`,
+        `At field "field1": 123 failed to typecheck (expected array)`,
       ]);
 
       const res2 = validateObjPropPasses(validateIsArray)('field1')({
@@ -270,36 +289,8 @@ describe('validators', () => {
     });
   });
 
-  describe('#validateArrayItemsHaveType()', () => {
-    it('should return an Err when the given array has items that do not typecheck', () => {
-      const validate = validateArrayItemsHaveType('string');
-
-      const res1 = validate([1, '2', '3']);
-      expect(isErr(res1)).to.be.true;
-      expect(getErrors(res1)).to.deep.equal([
-        `Item "1" failed to typecheck (expected string)`,
-      ]);
-
-      const res2 = validate(['1', true]);
-      expect(isErr(res2)).to.be.true;
-      expect(getErrors(res2)).to.deep.equal([
-        `Item "true" failed to typecheck (expected string)`,
-      ]);
-    });
-
-    it("should return an OK when the given array's items all typecheck", () => {
-      const validate = validateArrayItemsHaveType('string');
-
-      const res = validate(['1', '2']);
-      expect(isOK(res)).to.be.true;
-      expect(getErrors(res)).to.deep.equal([]);
-    });
-  });
-
-  describe('#validateArrayItemsPass()', () => {
-    const validate = validateArrayItemsPass(
-      n => (n > 3 ? ok() : err([`${n} <= 3`]))
-    );
+  describe('#validateArrayItems()', () => {
+    const validate = validateArrayItems(n => (n > 3 ? ok() : err(`${n} <= 3`)));
 
     it('should return an Err if any of the items fail the given validator', () => {
       const res = validate([2, 3, 4]);
@@ -313,6 +304,32 @@ describe('validators', () => {
     it('should return OK if all the items pass the given validator', () => {
       const res = validate([4, 5, 6]);
       expect(isOK(res)).to.be.true;
+    });
+  });
+
+  describe('#validateArrayItemsHaveType()', () => {
+    it('should return an Err when the given array has items that do not typecheck', () => {
+      const validate = validateArrayItemsHaveType('string');
+
+      const res1 = validate([1, '2', '3']);
+      expect(isErr(res1)).to.be.true;
+      expect(getErrors(res1)).to.deep.equal([
+        `At item 0: 1 failed to typecheck (expected string)`,
+      ]);
+
+      const res2 = validate(['1', true]);
+      expect(isErr(res2)).to.be.true;
+      expect(getErrors(res2)).to.deep.equal([
+        `At item 1: true failed to typecheck (expected string)`,
+      ]);
+    });
+
+    it("should return an OK when the given array's items all typecheck", () => {
+      const validate = validateArrayItemsHaveType('string');
+
+      const res = validate(['1', '2']);
+      expect(isOK(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal([]);
     });
   });
 });

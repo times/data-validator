@@ -1,5 +1,5 @@
 node_modules
 coverage
+flow-coverage
+flow-typed
 dist
-.nyc_output
-yarn-error.log

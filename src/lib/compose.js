@@ -1,35 +1,37 @@
 // @flow
+import { map, reduce } from 'ramda';
 
-import { isOK, ok, isErr, err, flattenResults } from './result';
+import { concatResults, err, isOK, ok, mergeResults } from './result';
 import type { Result } from './result';
 import type { Validator, Data } from './validators';
 
 /**
- * Types
+ * A Composer accepts an array of Validators and applies some Data to each of
+ * them in turn according to its particular logic, returning a single Result
  */
 type Composer = (Array<Validator>) => Data => Result;
 
 /**
- * Run a series of validators (left-to-right) such that all of the
- * validators must succeed. Otherwise, returns the first set of errors
+ * Runs an array of validators in order until one of them returns an Err.
+ * If all of the validators succeed, returns an OK
  */
 export const allWhileOK: Composer = validators => data =>
-  validators.reduce((res, v) => (isOK(res) ? v(data) : res), ok());
+  reduce((res, v) => (isOK(res) ? v(data) : res), ok())(validators);
 
 /**
- * Run a series of validators such that all of the validators
- * must succeed. Otherwise, returns all of the errors
+ * Runs all the validators in an array, returning their combined Errs. If all
+ * of the validators succeed, returns an OK
  */
 export const all: Composer = validators => data =>
-  flattenResults(validators.map(v => v(data)));
+  concatResults(map(v => v(data), validators));
 
 /**
- * Run a series of validators such that at least one of the validators must
- * succeed. Otherwise, returns all of the errors
+ * Runs all the validators in an array until one of them returns an OK. If all
+ * of the validators fail, returns their combined Errs
  */
 export const some: Composer = validators => data =>
-  validators.reduce((res, v) => {
+  reduce((res, v) => {
     if (isOK(res)) return res;
     const vRes = v(data);
-    return isErr(vRes) ? flattenResults([res, vRes]) : vRes;
-  }, err());
+    return isOK(vRes) ? vRes : mergeResults(res, vRes);
+  }, err())(validators);

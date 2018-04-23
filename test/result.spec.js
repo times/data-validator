@@ -2,35 +2,47 @@ import { expect } from 'chai';
 import {
   ok,
   err,
+  nestedErr,
   isOK,
   isErr,
-  toResult,
   mapErrors,
-  prefixErrors,
-  flattenResults,
-  getErrors,
+  mergeResults,
+  concatResults,
 } from '../src/lib/result';
+
+import { getErrors } from '../src/lib/printer';
 
 describe('result', () => {
   describe('#ok()', () => {
     it('constructs an OK object', () => {
-      expect(ok()).to.deep.equal({
-        valid: true,
-        errors: [],
-      });
+      expect(ok()).to.deep.equal({ valid: true });
     });
   });
 
   describe('#err()', () => {
-    it('constructs an Err object', () => {
-      expect(err()).to.deep.equal({
-        valid: false,
-        errors: [],
-      });
+    it('does not require an error', () => {
+      expect(err()).to.deep.equal({ valid: false, errors: [] });
+    });
 
+    it('constructs an Err object from an array of errors', () => {
       expect(err(['err1', 'err2'])).to.deep.equal({
         valid: false,
         errors: ['err1', 'err2'],
+      });
+    });
+
+    it('constructs an Err object from a single error', () => {
+      expect(err('err1')).to.deep.equal({ valid: false, errors: ['err1'] });
+    });
+  });
+
+  describe('#nestedErr()', () => {
+    it('constructs an Err object with nested errors', () => {
+      expect(nestedErr('object', { a: 'err1' })).to.deep.equal({
+        valid: false,
+        errors: [],
+        type: 'object',
+        items: { a: 'err1' },
       });
     });
   });
@@ -49,24 +61,12 @@ describe('result', () => {
   describe('#isErr()', () => {
     it('returns true only for an Err object', () => {
       expect(isErr(err())).to.be.true;
-      expect(isErr(err(['Error message']))).to.be.true;
+      expect(isErr(err('Error message'))).to.be.true;
 
       expect(isErr(ok())).to.be.false;
       expect(isErr({})).to.be.false;
       expect(isErr([])).to.be.false;
       expect(isErr(new Date())).to.be.false;
-    });
-  });
-
-  describe('#toResult()', () => {
-    it('constructs an OK object from an empty array', () => {
-      expect(isOK(toResult([]))).to.be.true;
-      expect(isOK(toResult(['abc']))).to.be.false;
-    });
-
-    it('constructs an Err object from a non-empty array', () => {
-      expect(isErr(toResult([]))).to.be.false;
-      expect(isErr(toResult(['abc']))).to.be.true;
     });
   });
 
@@ -78,63 +78,80 @@ describe('result', () => {
       expect(isErr(map(err())));
     });
 
-    it('should apply a function to each error in a Result', () => {
+    it('should apply a function to each top-level error in a Result', () => {
       const map = mapErrors((e, i) => `${i + 1}. ${e}`);
       const res = err(['a', 'b', 'c']);
 
-      expect(map(res).errors).to.deep.equal(['1. a', '2. b', '3. c']);
+      expect(getErrors(map(res))).to.deep.equal(['1. a', '2. b', '3. c']);
+    });
+
+    it('should apply a function to each nested item in a Result', () => {
+      const map = mapErrors(e => `got ${e}`);
+      const res = nestedErr('object', { a: err('a'), b: ok(), c: err('c') });
+
+      expect(getErrors(map(res))).to.deep.equal(['got a', 'got c']);
     });
   });
 
-  describe('#prefixErrors()', () => {
-    it('should not change the type of the Result', () => {
-      const map = prefixErrors('something');
-
-      expect(isOK(map(ok())));
-      expect(isErr(map(err())));
-    });
-
-    it('should prefix each error in a Result', () => {
-      const map = prefixErrors('P: ');
-      const res = err(['a', 'b', 'c']);
-
-      expect(map(res).errors).to.deep.equal(['P: a', 'P: b', 'P: c']);
-    });
-  });
-
-  describe('#flattenResults()', () => {
-    it('should flatten an array of OKs into an OK', () => {
-      const res = flattenResults([ok(), ok(), ok()]);
+  describe('#mergeResults()', () => {
+    it('should merge two OKs into an OK', () => {
+      const res = mergeResults(ok(), ok());
       expect(isOK(res)).to.be.true;
     });
 
-    it('should flatten an array of Errs into an Err', () => {
-      const res = flattenResults([err(['a']), err(['b']), err(['c'])]);
+    it('should merge two Errs into an Err', () => {
+      const res = mergeResults(err('a'), err('b'));
       expect(isErr(res)).to.be.true;
-      expect(res.errors).to.deep.equal(['a', 'b', 'c']);
+      expect(getErrors(res)).to.deep.equal(['a', 'b']);
     });
 
-    it('should flatten a mixed array of Results into an Err', () => {
-      const res = flattenResults([err(['a']), ok(), err(['c'])]);
+    it('should merge nested Errs into an Err', () => {
+      const res = mergeResults(
+        nestedErr('object', { a: err('a') }),
+        nestedErr('object', { b: err('b') })
+      );
       expect(isErr(res)).to.be.true;
-      expect(res.errors).to.deep.equal(['a', 'c']);
+      expect(getErrors(res)).to.deep.equal([
+        'At field "a": a',
+        'At field "b": b',
+      ]);
     });
 
-    it('should flatten a mixed Results array into an Err when the Errs have no messages', () => {
-      const res = flattenResults([ok(), err()]);
+    it('should merge a non-nested Err with a nested Err into an Err', () => {
+      const res = mergeResults(nestedErr('object', { b: err('b') }), err('a'));
       expect(isErr(res)).to.be.true;
-      expect(res.errors).to.deep.equal([]);
+      expect(getErrors(res)).to.deep.equal(['a', 'At field "b": b']);
+    });
+
+    it('should merge an OK and an Err into an Err', () => {
+      const res = mergeResults(err('a'), ok());
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal(['a']);
     });
   });
 
-  describe('#getErrors()', () => {
-    it('should return the errors of an Err', () => {
-      const errors = getErrors(toResult(['a']));
-      expect(errors).to.deep.equal(['a']);
+  describe('#concatResults()', () => {
+    it('should fold an array of OKs into an OK', () => {
+      const res = concatResults([ok(), ok(), ok()]);
+      expect(isOK(res)).to.be.true;
     });
-    it('should return an empty array for an OK', () => {
-      const errors = getErrors(toResult([]));
-      expect(errors).to.deep.equal([]);
+
+    it('should fold an array of Errs into an Err', () => {
+      const res = concatResults([err(['a']), err(['b']), err(['c'])]);
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal(['a', 'b', 'c']);
+    });
+
+    it('should fold a mixed array of Results into an Err', () => {
+      const res = concatResults([err(['a']), ok(), err(['c'])]);
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal(['a', 'c']);
+    });
+
+    it('should fold a mixed Results array into an Err when the Errs have no messages', () => {
+      const res = concatResults([ok(), err()]);
+      expect(isErr(res)).to.be.true;
+      expect(getErrors(res)).to.deep.equal([]);
     });
   });
 });

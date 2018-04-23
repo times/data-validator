@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { addIndex, compose, map } from 'ramda';
 import {
   validateAsObjectSchema,
   validateAsArraySchema,
@@ -15,8 +16,17 @@ import {
   validateArrayItemsHaveType,
 } from '../src/lib/validators';
 
-import { isOK, isErr, err, ok, toResult } from '../src/lib/result';
+import {
+  isOK,
+  isErr,
+  err,
+  nestedErr,
+  ok,
+  concatResults,
+} from '../src/lib/result';
+
 import { all, allWhileOK } from '../src/lib/compose';
+import { getErrors } from '../src/lib/printer';
 
 describe('schema', () => {
   describe('#validateAsObjectSchema()', () => {
@@ -50,6 +60,10 @@ describe('schema', () => {
       });
 
       expect(isErr(invalidSchema1)).to.be.true;
+      expect(getErrors(invalidSchema1)).to.deep.equal([
+        `At field "field1": at field "required": "not-a-boolean" failed to typecheck (expected boolean)`,
+        `At field "field2": at field "type": 1234 failed to typecheck (expected string)`,
+      ]);
     });
   });
 
@@ -64,11 +78,17 @@ describe('schema', () => {
         type: 1234,
       });
       expect(isErr(invalidSchema)).to.be.true;
+      expect(getErrors(invalidSchema)).to.deep.equal([
+        `At field "type": 1234 failed to typecheck (expected string)`,
+      ]);
 
       const invalidSchema2 = validateAsArraySchema({
         validator: 'not-a-function',
       });
       expect(isErr(invalidSchema2)).to.be.true;
+      expect(getErrors(invalidSchema2)).to.deep.equal([
+        `At field "validator": "not-a-function" failed to typecheck (expected function)`,
+      ]);
     });
   });
 
@@ -78,7 +98,13 @@ describe('schema', () => {
       expect(vs.length).to.equal(4);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+
+      const stringResult = validate('string');
+      expect(isErr(stringResult)).to.be.true;
+      expect(getErrors(stringResult)).to.deep.equal([
+        `"string" failed to typecheck (expected object)`,
+      ]);
+
       expect(isOK(validate({}))).to.be.true;
     });
 
@@ -87,12 +113,12 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isErr(validate({}))).to.be.true;
+      const errMsg =
+        'Schema error: "string" failed to typecheck (expected object)';
 
-      expect(validate([]).errors).to.deep.equal([
-        'Schema error: Schemas must be objects',
-      ]);
+      expect(getErrors(validate('string'))).to.deep.equal([errMsg]);
+      expect(getErrors(validate({}))).to.deep.equal([errMsg]);
+      expect(getErrors(validate([]))).to.deep.equal([errMsg]);
     });
 
     it('should handle cases where a schema key is not an object', () => {
@@ -101,19 +127,17 @@ describe('schema', () => {
         field2: {
           required: true,
         },
-        field3: 'something',
       });
 
       expect(vs.length).to.equal(1);
 
       const validate = allWhileOK(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isErr(validate({}))).to.be.true;
-      expect(isErr(validate({ field2: 1234 }))).to.be.true;
+      const errMsg = `Schema error: At field "field1": "test-1234" failed to typecheck (expected object)`;
 
-      expect(validate({ field2: 1234 }).errors).to.deep.equal([
-        'Schema error: "test-1234" failed to typecheck (expected object)',
-      ]);
+      expect(getErrors(validate('string'))).to.deep.equal([errMsg]);
+      expect(getErrors(validate({}))).to.deep.equal([errMsg]);
+      expect(getErrors(validate({ field2: 1234 }))).to.deep.equal([errMsg]);
+      expect(getErrors(validate({ field2: 1234 }))).to.deep.equal([errMsg]);
     });
 
     it('should handle cases where a schema field passes an invalid required property', () => {
@@ -128,8 +152,8 @@ describe('schema', () => {
       const validate = allWhileOK(vs);
       expect(isErr(validate('string'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
-      expect(validate({}).errors).to.deep.equal([
-        `Schema error: Field "required" failed to typecheck (expected boolean)`,
+      expect(getErrors(validate({}))).to.deep.equal([
+        `Schema error: At field "field1": at field "required": "yes" failed to typecheck (expected boolean)`,
       ]);
     });
 
@@ -145,8 +169,8 @@ describe('schema', () => {
       const validate = allWhileOK(vs);
       expect(isErr(validate('string'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
-      expect(validate({}).errors).to.deep.equal([
-        `Schema error: Field "type" failed to typecheck (expected string)`,
+      expect(getErrors(validate({}))).to.deep.equal([
+        `Schema error: At field "field1": at field "type": 123 failed to typecheck (expected string)`,
       ]);
     });
 
@@ -162,23 +186,28 @@ describe('schema', () => {
       const validate = allWhileOK(vs);
       expect(isErr(validate('string'))).to.be.true;
       expect(isErr(validate({}))).to.be.true;
-      expect(validate({}).errors).to.deep.equal([
-        `Schema error: Field "validator" failed to typecheck (expected function)`,
+      expect(getErrors(validate({}))).to.deep.equal([
+        `Schema error: At field "field1": at field "validator": {"not":"a","function":true} failed to typecheck (expected function)`,
       ]);
     });
 
     it('should check the existence of required fields', () => {
-      const vs1 = fromObjectSchema({
+      const vs = fromObjectSchema({
         field1: {
           required: true,
         },
       });
-      expect(vs1.length).to.equal(4);
+      expect(vs.length).to.equal(4);
 
-      const validate1 = all(vs1);
-      expect(isErr(validate1({}))).to.be.true;
-      expect(isErr(validate1({ field2: 'here' }))).to.be.true;
-      expect(isOK(validate1({ field1: 'here' }))).to.be.true;
+      const validate = all(vs);
+
+      const invalidResult = validate({ field2: 'here' });
+      expect(isErr(invalidResult)).to.be.true;
+      expect(getErrors(invalidResult)).to.deep.equal([
+        'Missing required field "field1"',
+      ]);
+
+      expect(isOK(validate({ field1: 'here' }))).to.be.true;
     });
 
     it('should check the types of fields', () => {
@@ -190,7 +219,13 @@ describe('schema', () => {
       expect(vs.length).to.equal(4);
 
       const validate = all(vs);
-      expect(isErr(validate({ field1: 123 }))).to.be.true;
+
+      const invalidResult = validate({ field1: 123 });
+      expect(isErr(invalidResult)).to.be.true;
+      expect(getErrors(invalidResult)).to.deep.equal([
+        `At field "field1": 123 failed to typecheck (expected string)`,
+      ]);
+
       expect(isOK(validate({}))).to.be.true;
       expect(isOK(validate({ field1: 'here' }))).to.be.true;
     });
@@ -231,7 +266,13 @@ describe('schema', () => {
       expect(vs.length).to.equal(4);
 
       const validate = all(vs);
-      expect(isErr(validate({ field1: 'not an object' }))).to.be.true;
+
+      const result = validate({ field1: 'not an object' });
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `At field "field1": "not an object" failed to typecheck (expected object)`,
+      ]);
+
       expect(isOK(validate({}))).to.be.true;
       expect(isOK(validate({ field1: {} }))).to.be.true;
     });
@@ -243,8 +284,8 @@ describe('schema', () => {
         },
       });
       const validate1 = all(vs1);
-      expect(validate1({ field1: 12345 }).errors).to.deep.equal([
-        `At field "field1": "12345" failed to typecheck (expected object)`,
+      expect(getErrors(validate1({ field1: 12345 }))).to.deep.equal([
+        `At field "field1": 12345 failed to typecheck (expected object)`,
       ]);
 
       // One level deeper
@@ -254,9 +295,11 @@ describe('schema', () => {
         },
       });
       const validate2 = all(vs2);
-      expect(validate2({ field2: { field1: 12345 } }).errors).to.deep.equal([
-        `At field "field2": At field "field1": "12345" failed to typecheck (expected object)`,
-      ]);
+      expect(getErrors(validate2({ field2: { field1: 12345 } }))).to.deep.equal(
+        [
+          `At field "field2": at field "field1": 12345 failed to typecheck (expected object)`,
+        ]
+      );
     });
 
     it('should ignore other schema fields', () => {
@@ -286,16 +329,27 @@ describe('schema', () => {
       expect(vs.length).to.equal(5);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `"string" failed to typecheck (expected object)`,
+      ]);
+
       expect(isOK(validate({}))).to.be.true;
     });
 
     it('should handle cases where the schema is not an object', () => {
       const vs = fromObjectSchemaStrict('string');
-      expect(vs.length).to.equal(1);
+      expect(vs.length).to.equal(2);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `Schema error: "string" failed to typecheck (expected object)`,
+      ]);
+
       expect(isErr(validate({}))).to.be.true;
     });
 
@@ -309,8 +363,9 @@ describe('schema', () => {
       });
       const validate2 = all(vs2);
 
-      expect(isErr(validate2({ field1: 'xxx', field2: 123, field3: 'yyy' }))).to
-        .be.true;
+      const result = validate2({ field1: 'xxx', field2: 123, field3: 'yyy' });
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([`Extra field "field3"`]);
     });
   });
 
@@ -320,7 +375,13 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
+
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `"string" failed to typecheck (expected array)`,
+      ]);
+
       expect(isOK(validate([]))).to.be.true;
     });
 
@@ -329,11 +390,11 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = all(vs);
-      expect(isErr(validate('string'))).to.be.true;
-      expect(isErr(validate([]))).to.be.true;
 
-      expect(validate([]).errors).to.deep.equal([
-        'Schema error: Schemas must be objects',
+      const result = validate('string');
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        `Schema error: "string" failed to typecheck (expected object)`,
       ]);
     });
 
@@ -344,10 +405,11 @@ describe('schema', () => {
       expect(vs.length).to.equal(1);
 
       const validate = allWhileOK(vs);
-      expect(isErr(validate([]))).to.be.true;
 
-      expect(validate([]).errors).to.deep.equal([
-        'Schema error: Field "type" failed to typecheck (expected string)',
+      const result = validate([]);
+      expect(isErr(result)).to.be.true;
+      expect(getErrors(result)).to.deep.equal([
+        'Schema error: At field "type": 12345 failed to typecheck (expected string)',
       ]);
     });
 
@@ -360,8 +422,8 @@ describe('schema', () => {
       const validate = allWhileOK(vs);
       expect(isErr(validate([]))).to.be.true;
 
-      expect(validate([]).errors).to.deep.equal([
-        'Schema error: Field "validator" failed to typecheck (expected function)',
+      expect(getErrors(validate([]))).to.deep.equal([
+        'Schema error: At field "validator": {"not":"a","function":true} failed to typecheck (expected function)',
       ]);
     });
 
@@ -395,8 +457,8 @@ describe('schema', () => {
         validator: validateIsObject,
       });
       const validate1 = all(vs1);
-      expect(validate1([{}, 1, {}]).errors).to.deep.equal([
-        `At item 1: "1" failed to typecheck (expected object)`,
+      expect(getErrors(validate1([{}, 1, {}]))).to.deep.equal([
+        `At item 1: 1 failed to typecheck (expected object)`,
       ]);
 
       // One level deeper
@@ -404,8 +466,8 @@ describe('schema', () => {
         validator: all(vs1),
       });
       const validate2 = all(vs2);
-      expect(validate2([[{}], [1]]).errors).to.deep.equal([
-        `At item 1: At item 0: "1" failed to typecheck (expected object)`,
+      expect(getErrors(validate2([[{}], [1]]))).to.deep.equal([
+        `At item 1: at item 0: 1 failed to typecheck (expected object)`,
       ]);
     });
 
@@ -453,11 +515,11 @@ describe('schema', () => {
         .to.be.true;
 
       expect(
-        validate({ field1: 123, field2: 'hello', field3: 1234 }).errors
+        getErrors(validate({ field1: 123, field2: 'hello', field3: 1234 }))
       ).to.deep.equal([
-        'Field "field1" failed to typecheck (expected string)',
-        'Field "field2" failed to typecheck (expected number)',
-        'Field "field3" failed to typecheck (expected array)',
+        'At field "field1": 123 failed to typecheck (expected string)',
+        'At field "field2": "hello" failed to typecheck (expected number)',
+        'At field "field3": 1234 failed to typecheck (expected array)',
       ]);
     });
 
@@ -523,12 +585,17 @@ describe('schema', () => {
         type: 'string',
       };
 
-      const arbitraryValidator = data =>
-        toResult(
-          data
-            .filter(d => d.length < 10)
-            .map(item => `Item "${item}" not longer than 10 characters`)
-        );
+      const arbitraryValidator = compose(
+        concatResults,
+        addIndex(map)(
+          (x, i) =>
+            x.length < 10
+              ? nestedErr('array', {
+                  [i]: err([`${x} not longer than 10 characters`]),
+                })
+              : ok()
+        )
+      );
 
       const validate = allWhileOK([arrayValidator(schema), arbitraryValidator]);
 
@@ -542,8 +609,8 @@ describe('schema', () => {
         isErr(validate(['string-longer-than-ten-characters', 'too-short']))
       ).to.be.true;
       expect(
-        validate(['string-longer-than-ten-characters', 'too-short']).errors
-      ).to.deep.equal(['Item "too-short" not longer than 10 characters']);
+        getErrors(validate(['string-longer-than-ten-characters', 'too-short']))
+      ).to.deep.equal(['At item 1: too-short not longer than 10 characters']);
     });
   });
 });

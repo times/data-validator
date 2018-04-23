@@ -1,57 +1,122 @@
 // @flow
+import {
+  addIndex,
+  concat,
+  map,
+  mapObjIndexed as mapObj,
+  merge,
+  mergeWith,
+  reduce,
+} from 'ramda';
 
 /**
- * Types
+ * Error messages are represented as strings
  */
 export type Errors = Array<string>;
 
-type OK = { valid: true, errors: [] };
-type Err = { valid: false, errors: Errors };
+/**
+ * A Result can be OK, which is valid, or an Err, which is invalid. An Err
+ * an array of errors, an optional type, and optional nested error items
+ */
+type OK = {| valid: true |};
+
+type Items = {
+  [string]: Result,
+};
+
+type ErrType = 'array' | 'object';
+
+type Err = {|
+  valid: false,
+  errors: Errors,
+  type?: ErrType,
+  items?: Items,
+|};
 
 export type Result = OK | Err;
 
 /**
- * Constructors
+ * Constructs an OK result
  */
 type _ok = () => OK;
-export const ok: _ok = () => ({ valid: true, errors: [] });
-
-type _err = (errs?: Errors) => Err;
-export const err: _err = (errs = []) => ({ valid: false, errors: errs });
+export const ok: _ok = () => ({ valid: true });
 
 /**
- * Helpers
+ * Constructs an Err result
+ */
+type _err = (errors?: string | Errors) => Result;
+export const err: _err = (errors = []) => ({
+  valid: false,
+  errors: Array.isArray(errors) ? errors : [errors],
+});
+
+/**
+ * Constructs an Err result with nested errors
+ */
+type NestedErr = (ErrType, Items) => Result;
+export const nestedErr: NestedErr = (type, items) => ({
+  valid: false,
+  errors: [],
+  type,
+  items,
+});
+
+/**
+ * Is the given result OK?
  */
 type IsOK = Result => boolean;
-export const isOK: IsOK = r => r.valid === true;
+export const isOK: IsOK = ({ valid }) => valid === true;
 
+/**
+ * Is the given result an Err?
+ */
 type IsErr = Result => boolean;
-export const isErr: IsErr = r => r.valid === false;
+export const isErr: IsErr = ({ valid }) => valid === false;
 
-// Convert a (possibly empty) array of errors into a Result
-type ToResult = Errors => Result;
-export const toResult: ToResult = errs =>
-  errs.length === 0 ? ok() : err(errs);
+/**
+ * Applies a function to every error in a Result
+ */
+type MapErrors = ((string, number) => string) => Result => Result;
+export const mapErrors: MapErrors = f => r => {
+  if (r.valid) return r;
 
-// Apply a function to every error in a Result
-type MapErrors = ((string) => string) => Result => Result;
-export const mapErrors: MapErrors = f => r => toResult(r.errors.map(f));
+  const withMappedErrors = {
+    valid: false,
+    errors: addIndex(map)(f, r.errors),
+  };
 
-// Prefix every error in a Result with the given string
-type PrefixErrors = string => Result => Result;
-export const prefixErrors: PrefixErrors = prefix =>
-  mapErrors(e => `${prefix}${e}`);
+  return r.items
+    ? merge(withMappedErrors, { items: mapObj(mapErrors(f), r.items) })
+    : withMappedErrors;
+};
 
-// Flatten an array of Results into a single Result
-type FlattenResults = (Array<Result>) => Result;
-export const flattenResults: FlattenResults = results =>
-  results.reduce(
-    (acc, r) =>
-      isErr(acc) || isErr(r) ? err([...getErrors(acc), ...getErrors(r)]) : ok(),
-    ok()
-  );
+/**
+ * Combines two results, which must be of the same type ('array' or 'object').
+ * Nested results will be recursively merged
+ */
+type MergeResults = (Result, Result) => Result;
+export const mergeResults: MergeResults = (r1, r2) => {
+  // If either result is valid we can safely return the other
+  if (r1.valid) return r2;
+  if (r2.valid) return r1;
 
-// Get the errors from a result
-type GetErrors = Result => Errors;
-export const getErrors: GetErrors = (result: Result) =>
-  isErr(result) ? [...result.errors] : [];
+  // Otherwise merge the errors
+  const result = {
+    valid: false,
+    errors: concat(r1.errors, r2.errors),
+    type: r1.type || r2.type,
+  };
+
+  return r1.items || r2.items
+    ? merge(result, {
+        items: mergeWith(mergeResults, r1.items || {}, r2.items || {}),
+      })
+    : result;
+};
+
+/**
+ * Combines an array of results, which must all be of the same type ('array' or
+ * 'object')
+ */
+type ConcatResults = (Array<Result>) => Result;
+export const concatResults: ConcatResults = reduce(mergeResults, ok());
