@@ -1,6 +1,7 @@
 import babel from 'rollup-plugin-babel';
 import babelrc from 'babelrc-rollup';
 import pkg from './package.json';
+import resolve from 'rollup-plugin-node-resolve';
 
 export default [
   {
@@ -11,6 +12,6 @@ export default [
       // ES module for other bundlers
       { dest: pkg.module, format: 'es' },
     ],
-    plugins: [babel(babelrc())],
+    plugins: [resolve({ module: true }), babel(babelrc())],
   },
 ];
