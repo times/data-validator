@@ -1,6 +1,6 @@
 {
   "name": "@times/data-validator",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Simple, composable data validator for JavaScript",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
@@ -35,12 +35,13 @@
   },
   "homepage": "https://github.com/times/data-validator#readme",
   "dependencies": {
-    "babel-plugin-external-helpers": "^6.22.0"
+    "ramda": "^0.25.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-core": "^6.25.0",
     "babel-eslint": "^8.2.2",
+    "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-istanbul": "^4.1.4",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
@@ -54,7 +55,6 @@
     "istanbul": "^0.4.5",
     "mocha": "^3.2.0",
     "nyc": "^11.0.2",
-    "ramda": "^0.25.0",
     "rollup": "^0.47.4",
     "rollup-plugin-babel": "^3.0.1"
   },
