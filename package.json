@@ -35,13 +35,13 @@
   },
   "homepage": "https://github.com/times/data-validator#readme",
   "dependencies": {
-    "babel-plugin-external-helpers": "^6.22.0",
     "ramda": "^0.25.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-core": "^6.25.0",
     "babel-eslint": "^8.2.2",
+    "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-istanbul": "^4.1.4",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
