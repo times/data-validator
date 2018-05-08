@@ -1,6 +1,6 @@
 {
   "name": "@times/data-validator",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Simple, composable data validator for JavaScript",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
@@ -56,7 +56,8 @@
     "mocha": "^3.2.0",
     "nyc": "^11.0.2",
     "rollup": "^0.47.4",
-    "rollup-plugin-babel": "^3.0.1"
+    "rollup-plugin-babel": "^3.0.1",
+    "rollup-plugin-node-resolve": "^3.3.0"
   },
   "nyc": {
     "require": ["babel-register"],
